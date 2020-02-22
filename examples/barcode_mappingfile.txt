@@ -1,0 +1,2 @@
+GGTGCGAA	wz4_fos
+CTCAATGA    wz4_oxy

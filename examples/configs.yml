@@ -1,0 +1,6 @@
+FW_file: /home/ubuntu/Parfums/datasets/YH19040-1a_1.clean.fq
+RC_file: /home/ubuntu/Parfums/datasets/YH19040-1a_2.clean.fq
+BC_file: /home/ubuntu/Parfums/examples/barcode_mappingfile.txt
+work_dir: /home/ubuntu/Parfums/output
+primer_file: /home/ubuntu/Parfums/datasets/primer.fasta
+vector_file: /home/ubuntu/Parfums/datasets/vector.fasta
