@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-
+import re
 from os import path, mkdir
 import logging
+from re import search
 from subprocess import check_output
 
 from yaml import safe_load
@@ -43,11 +44,7 @@ if __name__ == '__main__':
 
     # s0.main(fw_file, rc_file, work_dir, barcodes, length, mismatch=False)
     # s1.main(work_dir, idents)
-    # s2.main(work_dir, primer_file, idents, 200000)
+    # s2.clean_seq(work_dir, primer_file, idents, 200000)
     # s3.main(work_dir, vector_file, idents, 200000)
     # s4.main(work_dir, idents)
     # s5.main(work_dir, idents)
-    awk = "awk 'NR%4 == 1' {} | wc -l"
-    fw_count = check_output(awk.format('/home/ubuntu/Parfums/output/wz4_fos/wz4_fos.clean.fasta'), shell=True)
-    fw_count = int(fw_count)
-    print(fw_count, type(fw_count))

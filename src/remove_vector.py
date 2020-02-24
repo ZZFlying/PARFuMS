@@ -16,7 +16,6 @@ def read_fasta(work_dir, tempdir, idents, maxsize, suffix):
     split_dir = path.join(tempdir, 'splitFastaFiles')
     if not path.exists(split_dir):
         mkdir(split_dir)
-    logging.info('Value of MaxSize inside make vector run: {}'.format(maxsize))
     for ident in idents:
         fasta_filename = ident + suffix
         fasta_file = path.join(work_dir, ident, fasta_filename)
@@ -42,7 +41,6 @@ def make_crossmatch_script(split_file, vector_file, tempdir, script, suffix):
     script = path.join(sub_folder, script)
     logging.info('Making jobscript file')
     with open(cm_script, 'w') as output:
-        logging.info('Generating a script file to run CM_run_script.sh')
         for (ident, files) in split_file.items():
             for file in files:
                 cmd = 'cross_match {} {}'.format(file, vector_file) \
