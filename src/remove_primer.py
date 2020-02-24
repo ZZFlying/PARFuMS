@@ -45,7 +45,7 @@ def make_script(split_file, map_file, tempdir, script, suffix):
             for file in files:
                 cmd = 'cross_match {} {}'.format(file, map_file)
                 ' -gap1_only -minmatch 6 -minscore 10 -gap_init -3'
-                ' | perl {} {}'.format(script, file)
+                ' | python3 {} {}'.format(script, file)
                 cmd += '\n'
                 output.write(cmd)
                 cm_file = '{}.{}'.format(file, suffix)

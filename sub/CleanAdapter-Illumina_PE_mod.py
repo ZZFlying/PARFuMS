@@ -70,7 +70,6 @@ def clean_primer(fasta_file, seqs, primer, out_file):
 
 if __name__ == '__main__':
     fasta_file = sys.argv[1]
-    suffix = sys.argv[2]
-    out_file = '{}.{}'.format(fasta_file, suffix)
     seqs, primer = get_primer_seq()
+    out_file = '{}.{}'.format(fasta_file, 'clean')
     clean_primer(fasta_file, seqs, primer, out_file)
