@@ -28,11 +28,11 @@ def read_fasta(work_dir, tempdir, idents, maxsize, suffix):
         mkdir(split_dir)
     logging.info('Value of MaxSize inside make vector run: {}'.format(maxsize))
     for ident in idents:
-        fasta_filename = ident + suffix
+        fasta_filename = '{}.{}'.format(ident, suffix)
         fasta_file = path.join(work_dir, ident, fasta_filename)
         if path.exists(fasta_file):
             cmd = "grep '^>' {} | wc -l".format(fasta_file)
-            count = check_output(cmd, shell=True).decode('utf-8')
+            count = check_output(cmd, shell=True)
             count = int(count)
             if count > maxsize:
                 process_file[ident] = fasta_file
