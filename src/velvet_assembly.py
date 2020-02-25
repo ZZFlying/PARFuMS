@@ -2,10 +2,8 @@
 import logging
 import sys
 from os import path, mkdir
-from shutil import copy
-from subprocess import check_output
 
-from sub.parfums_subs import split_fasta_files, create_tempdir, submit_array
+from sub.parfums_subs import create_tempdir, submit_array, read_fasta
 
 step = 0
 
@@ -22,46 +20,16 @@ def read_inputSequences(work_dir, idents, suffix):
     return input_sequences
 
 
-def read_split_fasta(work_dir, temp_dir, idents, suffix, maxsize):
-    split_file = dict()
-    process_file = dict()
-    split_dir = path.join(temp_dir, 'splitFastaFiles')
-    if not path.exists(split_dir):
-        mkdir(split_dir)
-    logging.info('Value of MaxSize inside make vector run: {}'.format(maxsize))
-    for ident in idents:
-        filename = '{}.{}'.format(ident, suffix)
-        fasta_file = path.join(work_dir, ident, filename)
-        if path.exists(fasta_file):
-            cmd = "grep '^>' {} | wc -l".format(fasta_file)
-            count = check_output(cmd, shell=True).decode('utf-8')
-            count = int(count)
-            if count > maxsize:
-                process_file[ident] = fasta_file
-            else:
-                copy(fasta_file, split_dir)
-                split_file[ident] = path.join(split_dir, filename)
-    process_file = split_fasta_files(process_file, split_dir, maxsize)
-    split_file.update(process_file)
-    return split_file
-
-
 def merge_velvet(work_dir, temp_dir, split_file: dict, suffix):
     contigs = dict()
     for (ident, files) in split_file.items():
         out_file = path.join(work_dir, ident, '{}.{}'.format(ident, suffix))
         with open(out_file, 'w') as out:
-            if isinstance(files, list):
-                for file in files:
-                    contig_file = path.basename(file).split('.')[0]
-                    contig_file = path.join(temp_dir, 'assemble_{}'.format(contig_file), 'contigs.fa')
-                    with open(contig_file) as stream:
-                        out.writelines(stream.readlines())
-            else:
-                contig_file = path.basename(files).split('.')[0]
-                contig_file = path.join(temp_dir, 'assemble_{}'.format(contig_file), 'contigs.fa')
-                with open(contig_file) as stream:
-                    out.writelines(stream.readlines())
+            for file in files:
+                split_name = path.basename(file).split('.')[0]
+                contig_file = path.join(temp_dir, 'assemble_{}'.format(split_name), 'contigs.fa')
+                with open(contig_file) as contig_in:
+                    out.writelines(contig_in.readlines())
             contigs[ident] = out_file
     return contigs
 
@@ -71,14 +39,9 @@ def get_velvet(split_file: dict, params):
     (velveth_param, velvetg_param) = params
     cmd = 'velveth assemble_{0} {1} {2}; velvetg assemble_{0} {3}\n'
     for (ident, files) in split_file.items():
-        if isinstance(files, list):
-            for file in files:
-                filename = path.basename(file).split('.')[0]
-                temp = cmd.format(filename, velveth_param, file, velvetg_param)
-                script.append(temp)
-        elif isinstance(files, str):
-            filename = path.basename(files).split('.')[0]
-            temp = cmd.format(filename, velveth_param, files, velvetg_param)
+        for file in files:
+            filename = path.basename(file).split('.')[0]
+            temp = cmd.format(filename, velveth_param, file, velvetg_param)
             script.append(temp)
     return script
 
@@ -112,13 +75,15 @@ def get_remove_chimera(cdhit_file, frhit_file, idents, suffix):
     script = list()
     no_chimera_file = dict()
     perl_script = sys.path[0]
-    perl_script = path.join(perl_script, 'sub', 'FR-Hit_cleanChimera.pl')
+    # perl_script = path.join(perl_script, 'sub', 'FR-Hit_cleanChimera.pl')
+    perl_script = path.join(perl_script, 'sub', 'FR-Hit_cleanChimera.py')
     for ident in idents:
         fr_file = frhit_file[ident]
         cd_file = cdhit_file[ident]
         dirname = path.dirname(cd_file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
-        cmd = str.join(' ', ['perl', perl_script, fr_file, cd_file, '>', out_file])
+        # cmd = str.join(' ', ['perl', perl_script, fr_file, cd_file, '>', out_file])
+        cmd = str.join(' ', ['python3', perl_script, fr_file, cd_file, out_file])
         cmd = cmd + '\n'
         script.append(cmd)
         no_chimera_file[ident] = out_file
@@ -128,16 +93,18 @@ def get_remove_chimera(cdhit_file, frhit_file, idents, suffix):
 def get_unmapped_reads(seq_file, frhit_file, split_file, suffix):
     script = list()
     perl_script = sys.path[0]
-    perl_script = path.join(perl_script, 'sub', 'FR-Hit_get_unmapped.pl')
+    # perl_script = path.join(perl_script, 'sub', 'FR-Hit_get_unmapped.pl')
+    perl_script = path.join(perl_script, 'sub', 'FR-Hit_get_unmapped.py')
     for (ident, file) in seq_file.items():
         fr_file = frhit_file[ident]
         dirname = path.dirname(file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
-        cmd = str.join(' ', ['perl', perl_script, fr_file, file, ident, '>', out_file])
+        # cmd = str.join(' ', ['perl', perl_script, fr_file, file, ident, '>', out_file])
+        cmd = str.join(' ', ['perl', perl_script, fr_file, file, out_file])
         cmd = cmd + '\n'
         script.append(cmd)
-        split_file[ident] = out_file
-    return script
+        split_file[ident] = [out_file]
+    return script, split_file
 
 
 def get_combine_contig(idents, cdhit_file, contig_file, suffix):
@@ -179,7 +146,7 @@ def make_script(run_type, temp_dir, suffix=None, idents=None, params=None,
             script, out_file = get_remove_chimera(cdhit, frhit, idents, suffix)
         elif run_type == 'unmapped-reads':
             logging.info('Writing script file to get unmapped reads')
-            script = get_unmapped_reads(seq, frhit, split, suffix)
+            script, out_file = get_unmapped_reads(seq, frhit, split, suffix)
         elif run_type == 'combine-contigs':
             logging.info('Writing script to combine contig files')
             script = get_combine_contig(idents, cdhit, contig, suffix)
@@ -200,7 +167,7 @@ def round_1(work_dir, seq_file, idents):
 
     velveth_param = '31 -shortPaired'
     velvetg_param = '-cov_cutoff 10 -ins_length 100 -min_contig_lgth 100'
-    split_file = read_split_fasta(work_dir, temp_dir, idents, 'noVector.fasta', 10000)
+    split_file = read_fasta(work_dir, temp_dir, idents, 'noVector.fasta', 10000)
 
     script, empty_file = make_script('velvet', temp_dir, split=split_file,
                                      params=(velveth_param, velvetg_param))
@@ -219,11 +186,12 @@ def round_1(work_dir, seq_file, idents):
 
     script, cdhit_file = make_script('cd-hit-est', temp_dir, contig=no_chimera_file, suffix='cd-hit2.fasta')
     submit_array(script, 'CD-hit2', temp_dir)
-
+    # 将原始的seq片段映射到Velvet组装后去重的contig片段
     script, frhit_file = make_script('fr-hit', temp_dir, seq=seq_file, cdhit=cdhit_file, suffix='Map2.txt')
     submit_array(script, 'FR-hit2', temp_dir)
-
-    script, empty_file = make_script('unmapped-reads', temp_dir,
+    # 获取Fr-Hit中seq映射到contig的序列名
+    # 读取原始seq片段，输出未映射的seq序列，存储到split_file，进行下一轮Velvet组装
+    script, split_file = make_script('unmapped-reads', temp_dir,
                                      seq=seq_file, frhit=frhit_file, split=split_file, suffix='Missing1stPass.fasta')
     submit_array(script, 'UnmappedReads1', work_dir)
 
