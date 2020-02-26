@@ -19,9 +19,9 @@ def make_script(split_file, map_file, tempdir, script, suffix):
         for (ident, files) in split_file.items():
             for file in files:
                 cmd = 'cross_match {} {}'.format(file, map_file)
-                ' -gap1_only -minmatch 6 -minscore 10 -gap_init -3'
-                # ' | perl {} {}'.format(script, file)
-                ' | python3 {} {}'.format(script, file)
+                cmd += ' -gap1_only -minmatch 6 -minscore 10 -gap_init -3'
+                # cmd += ' | perl {} {}'.format(script, file)
+                cmd += ' | python3 {} {}'.format(script, file)
                 cmd += '\n'
                 output.write(cmd)
                 cm_file = '{}.{}'.format(file, suffix)
@@ -65,8 +65,9 @@ def clean_vector_seq(work_dir, vector_file, idents, maxsize):
     split_file = read_fasta(work_dir, tempdir, idents, maxsize, suffix='clean.fasta')
     cm_script, cm_files = make_script(split_file, vector_file, tempdir, script, suffix='noVector')
     submit_array(cm_script, 'vector_CM_run', tempdir)
-    merge_cm_file(cm_files, work_dir, suffix='noVector.fasta')
+    merge_cm_file(work_dir, cm_files, suffix='noVector.fasta')
 
-def main(work_dir, primer_file, vector_file, idents, maxsize):
+
+def main(work_dir, primer_file, vector_file, idents, maxsize=200000):
     clean_primer_seq(work_dir, primer_file, idents, maxsize)
     clean_vector_seq(work_dir, vector_file, idents, maxsize)
