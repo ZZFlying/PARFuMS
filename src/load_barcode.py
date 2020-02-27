@@ -12,6 +12,7 @@ def load_barcode(file):
                 barcode = barcode.upper()
                 length = len(barcode)
                 barcodes[barcode] = ident
-        return barcodes, length
+            idents = list(barcodes.values())
+            return barcodes, idents, length
     except FileNotFoundError:
         pass

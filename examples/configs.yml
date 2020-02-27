@@ -4,3 +4,5 @@ BC_file: /home/ubuntu/Parfums/examples/barcode_mappingfile.txt
 work_dir: /home/ubuntu/Parfums/output
 primer_file: /home/ubuntu/Parfums/datasets/primer.fasta
 vector_file: /home/ubuntu/Parfums/datasets/vector.fasta
+mismatch: true
+maxsize: 4000000

@@ -114,13 +114,13 @@ def get_seq(link_map, fasta_file, out_file):
             name = array[0].split('#')[0]
             if used[name]:
                 continue
-            if array[6] is '+' and array[8].startswith('>start'):
+            if array[6] is '+' and 'start' in array[8]:
                 continue
-            if array[6] is '-' and array[8].startswith('>stop'):
+            if array[6] is '-' and 'stop' in array[8]:
                 continue
-            if array[8].startswith('>stop') and int(array[-1]) < 90:
+            if 'stop' in array[8] and int(array[-1]) < 90:
                 continue
-            if array[8].startswith('>start') and int(array[-2]) > 10:
+            if 'start' in array[8] and int(array[-2]) > 10:
                 continue
             used[name] = True
             seq_name.add(name + '#0_0')
@@ -213,10 +213,10 @@ def main(fr_file, cd_file, ident, out_file):
                 pos = pos.split('!')
 
                 contig = contigs[gens[0]]
-                sub1 = contig[0:100] if pos[0].startswith('start') else contig[-100:]
+                sub1 = contig[0:100] if 'start' in pos[0] else contig[-100:]
 
                 contig = contigs[gens[1]]
-                sub2 = contig[0:100] if pos[1].startswith('start') else contig[-100:]
+                sub2 = contig[0:100] if 'start' in pos[1] else contig[-100:]
 
                 modify['{}.{}'.format(gens[0], count)] = contigs[gens[0]]
                 modify['{}.{}'.format(gens[1], count)] = contigs[gens[1]]
@@ -247,10 +247,5 @@ def main(fr_file, cd_file, ident, out_file):
                 out.write('>{}\n{}\n'.format(k, v))
 
 if __name__ == '__main__':
-    # ['python3', perl_script, frhit[ident], cdhit[ident], ident, out_file])
-    # ident = 'wz4_oxy'
-    # cd_file = '/home/ubuntu/Parfums/output/wz4_oxy/wz4_oxy.phrap.cdhit1'
-    # fr_file = '/home/ubuntu/Parfums/output/wz4_oxy/wz4_oxy.phrap_Map1.frhit'
-    # out_file = '/home/ubuntu/Parfums/output/wz4_oxy/wz4_oxy.ForPhrap2.fasta'
     [fr_file, cd_file, ident, out_file] = sys.argv[1:5]
     main(fr_file, cd_file, ident, out_file)

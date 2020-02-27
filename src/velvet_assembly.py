@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import logging
+import string
 import sys
 from os import path, mkdir
+from random import sample
 
 from sub.parfums_subs import create_tempdir, submit_array, read_fasta
 
@@ -20,7 +22,7 @@ def read_inputSequences(work_dir, idents, suffix):
     return input_sequences
 
 
-def merge_velvet(work_dir, temp_dir, split_file: dict, suffix):
+def merge_velvet(work_dir, temp_dir, split_file, suffix):
     contigs = dict()
     for (ident, files) in split_file.items():
         out_file = path.join(work_dir, ident, '{}.{}'.format(ident, suffix))
@@ -34,7 +36,7 @@ def merge_velvet(work_dir, temp_dir, split_file: dict, suffix):
     return contigs
 
 
-def get_velvet(split_file: dict, params):
+def get_velvet(split_file, params):
     script = list()
     (velveth_param, velvetg_param) = params
     cmd = 'velveth assemble_{0} {1} {2}; velvetg assemble_{0} {3}\n'
@@ -46,7 +48,7 @@ def get_velvet(split_file: dict, params):
     return script
 
 
-def get_cd_hit_est(contig_file: dict, suffix):
+def get_cd_hit_est(contig_file, suffix):
     script = list()
     cdhit_file = dict()
     for (ident, file) in contig_file.items():
@@ -100,7 +102,7 @@ def get_unmapped_reads(seq_file, frhit_file, split_file, suffix):
         dirname = path.dirname(file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
         # cmd = str.join(' ', ['perl', perl_script, fr_file, file, ident, '>', out_file])
-        cmd = str.join(' ', ['perl', perl_script, fr_file, file, out_file])
+        cmd = str.join(' ', ['python3', perl_script, fr_file, file, out_file])
         cmd = cmd + '\n'
         script.append(cmd)
         split_file[ident] = [out_file]
@@ -165,9 +167,15 @@ def round_1(work_dir, seq_file, idents):
     directory = create_tempdir(work_dir, prefix='VelvetRun1_')
     temp_dir = directory.name
 
+    # template = ''
+    # for l in sample(string.ascii_letters + string.digits, 5):
+    #     template += l
+    # temp_dir = path.join(work_dir, 'temp', 'VelvetRun1_' + template)
+    # mkdir(temp_dir)
+
     velveth_param = '31 -shortPaired'
     velvetg_param = '-cov_cutoff 10 -ins_length 100 -min_contig_lgth 100'
-    split_file = read_fasta(work_dir, temp_dir, idents, 'noVector.fasta', 10000)
+    split_file = read_fasta(work_dir, temp_dir, idents, 10000, suffix='noVector.fasta')
 
     script, empty_file = make_script('velvet', temp_dir, split=split_file,
                                      params=(velveth_param, velvetg_param))
@@ -193,7 +201,7 @@ def round_1(work_dir, seq_file, idents):
     # 读取原始seq片段，输出未映射的seq序列，存储到split_file，进行下一轮Velvet组装
     script, split_file = make_script('unmapped-reads', temp_dir,
                                      seq=seq_file, frhit=frhit_file, split=split_file, suffix='Missing1stPass.fasta')
-    submit_array(script, 'UnmappedReads1', work_dir)
+    submit_array(script, 'UnmappedReads1', temp_dir)
 
     logging.info('Round-1 completed')
     return split_file, cdhit_file
@@ -203,6 +211,12 @@ def round_2(work_dir, seq_file, split_file, cdhit_file, idents):
     logging.info('Velvet Assembly Round-2 Started')
     directory = create_tempdir(work_dir, prefix='VelvetRun2_')
     temp_dir = directory.name
+
+    # template = ''
+    # for l in sample(string.ascii_letters + string.digits, 5):
+    #     template += l
+    # temp_dir = path.join(work_dir, 'temp', 'VelvetRun2_' + template)
+    # mkdir(temp_dir)
 
     velveth_param = '31 -shortPaired'
     velvetg_param = '-cov_cutoff 7 -ins_length 80 -min_contig_lgth 100'

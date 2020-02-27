@@ -53,7 +53,7 @@ def make_crossmatch_script(split_file, vector_file, tempdir, script, suffix):
     return cm_script, cm_files
 
 
-def merge_cm_file(cm_files, work_dir, suffix):
+def merge_cm_file(work_dir, cm_files, suffix):
     logging.info('Merging clean fasta output files')
     outfile = ''
     for (ident, files) in cm_files.items():
@@ -76,4 +76,4 @@ def main(work_dir, vector_file, idents, maxsize):
                                                  script='RemoveVector_Gautam.pl',
                                                  suffix='.noVector')
     submit_array(cm_script, 'vector_CM_run', tempdir)
-    merge_cm_file(cm_files, work_dir, suffix='.noVector.fasta')
+    merge_cm_file(work_dir, cm_files, suffix='.noVector.fasta')
