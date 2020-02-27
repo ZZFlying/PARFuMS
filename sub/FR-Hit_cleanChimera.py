@@ -62,10 +62,10 @@ def clean_chimera(seqs, length, genomes_a, genomes_b, out_file):
                 ratio = coverage[i] / coverage_b[i]
                 if coverage_b[i] < 20 and ratio > 10 or ratio > 100:
                     seq = seqs[seq_name]
-                    seqs[seq_name] = seq[:i] + 'N' + seq[i:]
+                    seqs[seq_name] = seq[:i] + 'N' + seq[i + 1:]
             sub_seqs = seqs[seq_name].split('N')
             for i in range(len(sub_seqs)):
-                if len(sub_seqs[i]) > 60:
+                if len(sub_seqs[i]) > 50:
                     sub_name = '>{}_{}\n'.format(seq_name, i)
                     sub_seq = sub_seqs[i] + '\n'
                     out.write(sub_name)
