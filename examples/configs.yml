@@ -1,8 +1,8 @@
-FW_file: /home/ubuntu/Parfums/datasets/YH19040-1a_1.clean.fq
-RC_file: /home/ubuntu/Parfums/datasets/YH19040-1a_2.clean.fq
-BC_file: /home/ubuntu/Parfums/examples/barcode_mappingfile.txt
-work_dir: /home/ubuntu/Parfums/output
-primer_file: /home/ubuntu/Parfums/datasets/primer.fasta
-vector_file: /home/ubuntu/Parfums/datasets/vector.fasta
+FW_file: /root/PARFuMS/datasets/FW.fastq
+RC_file: /root/PARFuMS/datasets/RC.fastq
+BC_file: /root/PARFuMS/examples/barcode_mappingfile.txt
+work_dir: /root/PARFuMS/output
+primer_file: /root/PARFuMS/datasets/primer.fasta
+vector_file: /root/PARFuMS/datasets/vector.fasta
 mismatch: true
-maxsize: 4000000
+maxsize: 8000000
