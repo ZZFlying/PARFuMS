@@ -20,32 +20,40 @@ def read_contigs(file):
     return contigs, length
 
 
-def process_array(mappings, length, links):
-    map_seq = set()
-    for mapping in mappings:
-        map_name = mapping[8]
-        map_seq.add(map_name)
-    if len(mappings) != 2 or len(map_seq) != 2:
+def process_array(array, length, links):
+    map_seq = defaultdict(set)
+    for mapping in array:
+        map_name = mapping[0]
+        ref_name = mapping[8]
+        map_seq[ref_name].add(map_name)
+    if len(map_seq) != 2:
+        return
+    ref_name = set()
+    for (k, v) in map_seq.items():
+        if len(v) != 1:
+            return
+        ref_name = ref_name.union(v)
+    if len(ref_name) != 2:
         return
 
-    seq_fw, seq_rc = mappings[0], mappings[1]
+    seq_fw, seq_rc = array[0], array[1]
     seq_fw = [int(x) if x.isdigit() else x for x in seq_fw]
     seq_rc = [int(x) if x.isdigit() else x for x in seq_rc]
     map_fw, map_rc = seq_fw[8], seq_rc[8]
 
-    if seq_fw[6] is '+':
+    if seq_fw[6] == '+':
         link = 'stop_1' if seq_fw[-1] > length[map_fw] - 100 else 'weird1'
     else:
         link = 'start_1' if seq_fw[-2] < 100 else 'weird_1'
 
-    if seq_rc[6] is '+':
+    if seq_rc[6] == '+':
         link += '!stop_2' if seq_rc[-1] > length[map_rc] - 100 else '!weird2'
     else:
         link += '!start_2' if seq_rc[-2] < 100 else '!weird_2'
 
     if 'weird' not in link:
-        fw_rc = map_fw + '!' + map_rc
-        rc_fw = map_rc + '!' + map_fw
+        fw_rc = '{}!{}'.format(map_fw, map_rc)
+        rc_fw = '{}!{}'.format(map_rc, map_fw)
         if link == 'start_1!start_2' or link == 'stop_1!stop_2':
             if links[rc_fw][link]:
                 links[rc_fw][link] += 1
@@ -63,28 +71,28 @@ def process_array(mappings, length, links):
                 links[fw_rc][link] += 1
 
 
-def create_links(fr_file, length):
+def check_links(fr_file, length):
     with open(fr_file) as fr_in:
         temp = ''
-        seqs = list()
+        mapping = list()
         links = defaultdict(lambda: defaultdict(int))
         for line in fr_in:
-            mapping_arr = line.split()
-            seq_name = mapping_arr[0].split('#')[0]
-            coverage = float(mapping_arr[7].strip('%'))
+            array = line.split()
+            seq_name = array[0].split('#')[0]
+            coverage = float(array[7].strip('%'))
             if coverage < 95:
                 continue
             if seq_name != temp:
                 if temp != '':
-                    process_array(seqs, length, links)
+                    process_array(mapping, length, links)
                 temp = seq_name
-                seqs = list()
-            seqs.append(mapping_arr)
-        process_array(seqs, length, links)
+                mapping = list()
+            mapping.append(array)
+        process_array(mapping, length, links)
         return links
 
 
-def update_link_threshold(links: dict):
+def update_link_threshold(links):
     threshold = 5
     thresholds = [5, 10, 20, 40, 60, 80, 100]
     for threshold in thresholds:
@@ -124,7 +132,7 @@ def get_sequences(link_map, fasta_file, out_file):
             seq_name.add(name + '#0_0')
             seq_name.add(name + '#0_1')
 
-    with open(fasta_file) as fasta_in, open(out_file, 'w+') as out:
+    with open(fasta_file) as fasta_in, open(out_file, 'a') as out:
         output = False
         for line in fasta_in:
             if line.startswith('>'):
@@ -184,14 +192,15 @@ def clean_chimera(fr_file, seq_file):
     return clean_seq
 
 
-def main(fr_file, cd_file, temp_dir, ident, out_file):
+def main(fr_file, cd_file, tempdir, ident, out_file):
     contigs, length = read_contigs(cd_file)
-    links = create_links(fr_file, length)
+    links = check_links(fr_file, length)
     threshold = update_link_threshold(links)
 
     dirname = path.dirname(out_file)
     fasta_file = path.join(dirname, ident + '.clean.fasta')
-    directory = create_tempdir(temp_dir)
+
+    directory = create_tempdir(tempdir)
     tempdir = directory.name
     to_map_file = path.join(tempdir, "{}-Link_ToMap.fna".format(ident))
     link_map_file = path.join(tempdir, "{}-Link_Map.txt".format(ident))
@@ -201,27 +210,27 @@ def main(fr_file, cd_file, temp_dir, ident, out_file):
     modify = dict()
     clean_seq = dict()
     skip = defaultdict(bool)
-    for (seq_name, link_counts) in links.items():
-        for (pos, link_num) in link_counts.items():
+    for (combine_name, link) in links.items():
+        for (pos, link_num) in link.items():
             if link_num >= threshold:
-                gens = seq_name.split('!')
+                name = combine_name.split('!')
                 pos = pos.split('!')
 
-                contig = contigs[gens[0]]
+                contig = contigs[name[0]]
                 sub1 = contig[0:100] if 'start' in pos[0] else contig[-100:]
 
-                contig = contigs[gens[1]]
+                contig = contigs[name[1]]
                 sub2 = contig[0:100] if 'start' in pos[1] else contig[-100:]
 
-                modify['{}.{}'.format(gens[0], count)] = contigs[gens[0]]
-                modify['{}.{}'.format(gens[1], count)] = contigs[gens[1]]
-                skip[gens[0]] = True
-                skip[gens[1]] = True
+                modify['{}.{}'.format(name[0], count)] = sub1
+                modify['{}.{}'.format(name[1], count)] = sub2
+                skip[name[0]] = True
+                skip[name[1]] = True
                 count += 1
                 with open(to_map_file, 'w') as output:
-                    output.write('>{}_{}\n'.format(pos[0], gens[0]))
+                    output.write('>{}_{}\n'.format(pos[0], name[0]))
                     output.write(sub1 + '\n')
-                    output.write('>{}_{}\n'.format(pos[1], gens[1]))
+                    output.write('>{}_{}\n'.format(pos[1], name[1]))
                     output.write(sub2 + '\n')
                 system('fr-hit -d {} -a {} -o {} -g 1 -q 50 -c 95'.format(to_map_file, fasta_file, link_map_file))
                 get_sequences(link_map_file, fasta_file, to_map_file)
@@ -242,5 +251,5 @@ def main(fr_file, cd_file, temp_dir, ident, out_file):
                 out.write('>{}\n{}\n'.format(k, v))
 
 if __name__ == '__main__':
-    [fr_file, cd_file, temp_dir, ident, out_file] = sys.argv[1:6]
-    main(fr_file, cd_file, temp_dir, ident, out_file)
+    [fr_file, cd_file, tempdir, ident, out_file] = sys.argv[1:6]
+    main(fr_file, cd_file, tempdir, ident, out_file)
