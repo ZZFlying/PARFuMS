@@ -83,7 +83,7 @@ def submit_array(job_script, job_name, work_dir):
     step_size = ceil(job_count / 1000)
     sub_folder = path.join(sys.path[0], 'sub')
     slurm_script = path.join(sub_folder, 'submit_job_array_slurm.sh')
-    slurm_cmd = 'sbatch --job-name={} --chdir={} --mem=2000'.format(job_name, work_dir)
+    slurm_cmd = 'sbatch -J {} -D {} --mem=2000'.format(job_name, work_dir)
     slurm_cmd = str.join(' ', [slurm_script, job_script, str(step_size), '|', slurm_cmd])
     logging.debug('cmd =>' + slurm_cmd)
 
@@ -98,8 +98,8 @@ def submit_array(job_script, job_name, work_dir):
         remove(completed_file)
 
     slurm_cmd = "sbatch --dependency=singleton " \
-                + "--chdir={} ".format(work_dir) \
-                + "--job-name={} {} {} | ".format(job_name, complete_script, completed_file) \
+                + "-D {} ".format(work_dir) \
+                + "-J {} {} {} | ".format(job_name, complete_script, completed_file) \
                 + "awk '{print $NF}'"
     logging.debug('cmd =>' + slurm_cmd)
 
