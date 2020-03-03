@@ -63,7 +63,7 @@ def get_fr_hit(seq_file, cdhit_file, suffix):
     return script, frhit_file
 
 
-def get_link_contigs(cdhit, frhit, suffix):
+def get_link_contigs(cdhit, frhit, temp_dir, suffix):
     script = list()
     phrap_file = dict()
     perl_script = sys.path[0]
@@ -72,7 +72,7 @@ def get_link_contigs(cdhit, frhit, suffix):
         if path.exists(file):
             dirname = path.dirname(file)
             out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
-            cmd = str.join(' ', ['python3', perl_script, frhit[ident], cdhit[ident], ident, out_file])
+            cmd = str.join(' ', ['python3', perl_script, frhit[ident], cdhit[ident], temp_dir, ident, out_file])
             cmd += '\n'
             phrap_file[ident] = out_file
             script.append(cmd)
@@ -103,7 +103,7 @@ def make_script(run_type, temp_dir, suffix=None, idents=None, params=None,
             script, out_file = get_fr_hit(seq, cdhit, suffix)
         elif run_type == 'link-contigs':
             logging.info('Writing link-contigs script file')
-            script, out_file = get_link_contigs(cdhit, frhit, suffix)
+            script, out_file = get_link_contigs(cdhit, frhit, temp_dir, suffix)
         else:
             logging.error('Invalid runType:{}'.format(run_type))
 
