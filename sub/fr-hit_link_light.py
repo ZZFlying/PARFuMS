@@ -98,14 +98,12 @@ def update_link_threshold(links: dict):
     return threshold
 
 
-def create_tempdir(out_file):
-    tempdir = path.dirname(out_file)
-    tempdir = path.join(tempdir, 'temp')
+def create_tempdir(tempdir):
     directory = TemporaryDirectory(prefix='linkFiles', dir=tempdir)
     return directory
 
 
-def get_seq(link_map, fasta_file, out_file):
+def get_sequences(link_map, fasta_file, out_file):
     with open(link_map) as link_in:
         seq_name = set()
         used = defaultdict(bool)
@@ -126,7 +124,6 @@ def get_seq(link_map, fasta_file, out_file):
             seq_name.add(name + '#0_0')
             seq_name.add(name + '#0_1')
 
-    seq_count = 0
     with open(fasta_file) as fasta_in, open(out_file, 'w+') as out:
         output = False
         for line in fasta_in:
@@ -135,12 +132,10 @@ def get_seq(link_map, fasta_file, out_file):
                 name = line.lstrip('>')
                 name = name.strip('\n')
                 if name in seq_name:
-                    seq_count += 1
                     out.write(line)
                     output = True
             elif output:
                 out.write(line)
-    return seq_count
 
 
 def create_mapped_list(seq_length):
@@ -162,7 +157,7 @@ def clean_chimera(fr_file, seq_file):
             array = [int(x) if x.isdigit() else x for x in array]
             if array[7] < 95:
                 continue
-            if not (array[3] / array[7] >= 0.95 or array[-2] < 5 or array[-1] > length[array[8] - 5]):
+            if not (array[3] / array[7] >= 0.95 or array[-2] < 5 or array[-1] > length[array[8]] - 5):
                 continue
             for i in range(array[-2], array[-1] + 1):
                 genomes_a[array[8]][i - 1] += 1
@@ -181,22 +176,22 @@ def clean_chimera(fr_file, seq_file):
             precent = coverage[i] / coverage_b[i]
             if coverage_b[i] < 20 and precent > 10 or precent > 100:
                 seq = seqs[seq_name]
-                seqs[seq_name] = seq[:i] + 'N' + seq[i:]
+                seqs[seq_name] = seq[:i] + 'N' + seq[i + 1:]
         sub_seqs = seqs[seq_name].split('N')
         for i in range(len(sub_seqs)):
             if len(sub_seqs[i]) > 60:
-                clean_seq[seq_name + '_' + i] = sub_seqs[i]
+                clean_seq['{}_{}'.format(seq_name, i)] = sub_seqs[i]
     return clean_seq
 
 
-def main(fr_file, cd_file, ident, out_file):
+def main(fr_file, cd_file, temp_dir, ident, out_file):
     contigs, length = read_contigs(cd_file)
     links = create_links(fr_file, length)
     threshold = update_link_threshold(links)
 
     dirname = path.dirname(out_file)
     fasta_file = path.join(dirname, ident + '.clean.fasta')
-    directory = create_tempdir(dirname)
+    directory = create_tempdir(temp_dir)
     tempdir = directory.name
     to_map_file = path.join(tempdir, "{}-Link_ToMap.fna".format(ident))
     link_map_file = path.join(tempdir, "{}-Link_Map.txt".format(ident))
@@ -208,7 +203,7 @@ def main(fr_file, cd_file, ident, out_file):
     skip = defaultdict(bool)
     for (seq_name, link_counts) in links.items():
         for (pos, link_num) in link_counts.items():
-            if link_num > threshold:
+            if link_num >= threshold:
                 gens = seq_name.split('!')
                 pos = pos.split('!')
 
@@ -222,18 +217,18 @@ def main(fr_file, cd_file, ident, out_file):
                 modify['{}.{}'.format(gens[1], count)] = contigs[gens[1]]
                 skip[gens[0]] = True
                 skip[gens[1]] = True
-
+                count += 1
                 with open(to_map_file, 'w') as output:
                     output.write('>{}_{}\n'.format(pos[0], gens[0]))
                     output.write(sub1 + '\n')
                     output.write('>{}_{}\n'.format(pos[1], gens[1]))
                     output.write(sub2 + '\n')
                 system('fr-hit -d {} -a {} -o {} -g 1 -q 50 -c 95'.format(to_map_file, fasta_file, link_map_file))
-                if get_seq(link_map_file, fasta_file, to_map_file):
-                    system('cd-hit-est -i {} -o {} -G 0 -aS 0.99 -g 1 -r 1 -c 0.9'.format(to_map_file, link_out_file))
-                    system("phrap -minmatch 10 -maxmatch 30 -bandwidth 0 -minscore 15 {}".format(link_out_file))
-                    system("fr-hit -d {}.contigs -o {} -a {} -m 30".format(link_out_file, link_map_file, fasta_file))
-                    clean_seq = clean_chimera(link_map_file, link_out_file + '.contigs')
+                get_sequences(link_map_file, fasta_file, to_map_file)
+                system('cd-hit-est -i {} -o {} -G 0 -aS 0.99 -g 1 -r 1 -c 0.9'.format(to_map_file, link_out_file))
+                system("phrap -minmatch 10 -maxmatch 30 -bandwidth 0 -minscore 15 {}".format(link_out_file))
+                system("fr-hit -d {}.contigs -o {} -a {} -m 30".format(link_out_file, link_map_file, fasta_file))
+                clean_seq = clean_chimera(link_map_file, link_out_file + '.contigs')
 
     with open(out_file, 'w') as out:
         for (k, v) in contigs.items():
@@ -247,5 +242,5 @@ def main(fr_file, cd_file, ident, out_file):
                 out.write('>{}\n{}\n'.format(k, v))
 
 if __name__ == '__main__':
-    [fr_file, cd_file, ident, out_file] = sys.argv[1:5]
-    main(fr_file, cd_file, ident, out_file)
+    [fr_file, cd_file, temp_dir, ident, out_file] = sys.argv[1:6]
+    main(fr_file, cd_file, temp_dir, ident, out_file)
