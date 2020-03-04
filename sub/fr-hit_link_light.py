@@ -21,19 +21,14 @@ def read_contigs(file):
 
 
 def process_array(array, length, links):
-    map_seq = defaultdict(set)
+    map_seq = set()
+    ref_seq = set()
     for mapping in array:
-        map_name = mapping[0]
-        ref_name = mapping[8]
-        map_seq[ref_name].add(map_name)
-    if len(map_seq) != 2:
-        return
-    ref_name = set()
-    for (k, v) in map_seq.items():
-        if len(v) != 1:
-            return
-        ref_name = ref_name.union(v)
-    if len(ref_name) != 2:
+        map_name = mapping[8]
+        ref_name = mapping[0]
+        map_seq.add(map_name)
+        ref_seq.add(ref_name)
+    if len(array) != 2 or len(map_seq) != 2 or len(ref_seq) != 2:
         return
 
     seq_fw, seq_rc = array[0], array[1]
@@ -222,8 +217,8 @@ def main(fr_file, cd_file, tempdir, ident, out_file):
                 contig = contigs[name[1]]
                 sub2 = contig[0:100] if 'start' in pos[1] else contig[-100:]
 
-                modify['{}.{}'.format(name[0], count)] = sub1
-                modify['{}.{}'.format(name[1], count)] = sub2
+                modify['{}.{}'.format(name[0], count)] = contigs[name[0]]
+                modify['{}.{}'.format(name[1], count)] = contigs[name[1]]
                 skip[name[0]] = True
                 skip[name[1]] = True
                 count += 1
@@ -237,7 +232,7 @@ def main(fr_file, cd_file, tempdir, ident, out_file):
                 system('cd-hit-est -i {} -o {} -G 0 -aS 0.99 -g 1 -r 1 -c 0.9'.format(to_map_file, link_out_file))
                 system("phrap -minmatch 10 -maxmatch 30 -bandwidth 0 -minscore 15 {}".format(link_out_file))
                 system("fr-hit -d {}.contigs -o {} -a {} -m 30".format(link_out_file, link_map_file, fasta_file))
-                clean_seq = clean_chimera(link_map_file, link_out_file + '.contigs')
+                clean_seq.update(clean_chimera(link_map_file, link_out_file + '.contigs'))
 
     with open(out_file, 'w') as out:
         for (k, v) in contigs.items():
