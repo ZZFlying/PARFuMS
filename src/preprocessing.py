@@ -63,13 +63,13 @@ def main(fw_file, rc_file, work_dir, barcodes, length, mismatch):
                     total += 1
 
                     fwd_id = '{}#0_0\n'.format(fwd_line.split()[0])
-                    fwd_bar = fwd_line.strip('\n')[-length:]
+                    fwd_bar = fwd_line.strip()[-length:]
                     fwd_seq = fw.readline()
                     fwd_plus = fw.readline()
                     fwd_qual = fw.readline()
 
                     rev_id = '{}#0_1\n'.format(rev_line.split()[0])
-                    rev_bar = rev_line.strip('\n')[-length:]
+                    rev_bar = rev_line.strip()[-length:]
                     rev_seq = rc.readline()
                     rev_plus = rc.readline()
                     rev_qual = rc.readline()

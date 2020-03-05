@@ -12,10 +12,9 @@ def read_contigs(file):
         for line in cd_in:
             if line.startswith('>'):
                 name = line.lstrip('>')
-                name = name.strip('\n')
                 name = name.strip()
             else:
-                contigs[name] += line.strip('\n')
+                contigs[name] += line.strip()
                 length[name] = len(contigs[name])
     return contigs, length
 
