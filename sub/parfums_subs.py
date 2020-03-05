@@ -87,10 +87,10 @@ def submit_array(job_script, job_name, work_dir):
     slurm_script = path.join(sub_folder, 'submit_job_array_slurm.sh')
     slurm_cmd = 'sbatch -J {} -D {} --mem=2000'.format(job_name, work_dir)
     slurm_cmd = str.join(' ', [slurm_script, job_script, str(step_size), '|', slurm_cmd])
-    logging.debug('cmd =>' + slurm_cmd)
+    logging.debug('cmd => ' + slurm_cmd)
 
     job_return = check_output(slurm_cmd, shell=True).decode('utf-8')
-    logging.debug('job_return =>' + job_return.strip('\n'))
+    logging.debug('job_return => ' + job_return.strip())
     job_id = search('Submitted batch job (\d+)', job_return).group(1)
 
     completed_file = '{}_{}_check.txt'.format(job_name, job_id)
@@ -103,10 +103,10 @@ def submit_array(job_script, job_name, work_dir):
                 + "-D {} ".format(work_dir) \
                 + "-J {} {} {} | ".format(job_name, complete_script, completed_file) \
                 + "awk '{print $NF}'"
-    logging.debug('cmd =>' + slurm_cmd)
+    logging.debug('cmd => ' + slurm_cmd)
 
     job_return = check_output(slurm_cmd, shell=True).decode('utf-8')
-    logging.debug('job_return =>' + job_return.strip('\n'))
+    logging.debug('job_return => ' + job_return.strip())
 
     wait_job_finished(job_id, work_dir, completed_file, job_count)
 
