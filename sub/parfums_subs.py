@@ -58,7 +58,7 @@ def split_fasta_files(process_file, out_dir, maxsize):
             while line:
                 if line.startswith('>'):
                     if count < maxsize:
-                        output.writelines([line, f.readline()])
+                        output.write(line)
                         count += 1
                     else:
                         output.close()
@@ -68,8 +68,10 @@ def split_fasta_files(process_file, out_dir, maxsize):
                         file_part += 1
                         split_file = path.join(out_dir, split_name.format(ident, file_part))
                         output = open(split_file, 'w')
-                        output.writelines([line, f.readline()])
+                        output.write(line)
                         count += 1
+                else:
+                    output.write(line)
                 line = f.readline()
             output.close()
             split_list.append(split_file)
