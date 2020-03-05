@@ -56,18 +56,5 @@ def clean_primer_seq(work_dir, primer_file, idents, maxsize):
     merge_cm_file(work_dir, cm_files, suffix='clean.fasta')
 
 
-def clean_vector_seq(work_dir, vector_file, idents, maxsize):
-    logging.info('STEP 3: REMOVING VECTOR SEQUENCES')
-    directory = create_tempdir(work_dir, prefix='vector_CMRun_')
-    tempdir = directory.name
-    # script = 'RemoveVector_Gautam.pl'
-    script = 'RemoveVector_Gautam.py'
-    split_file = read_fasta(work_dir, tempdir, idents, maxsize, suffix='clean.fasta')
-    cm_script, cm_files = make_script(split_file, vector_file, tempdir, script, suffix='noVector')
-    submit_array(cm_script, 'vector_CM_run', tempdir)
-    merge_cm_file(work_dir, cm_files, suffix='noVector.fasta')
-
-
-def main(work_dir, primer_file, vector_file, idents, maxsize=200000):
+def main(work_dir, primer_file, idents, maxsize=200000):
     clean_primer_seq(work_dir, primer_file, idents, maxsize)
-    clean_vector_seq(work_dir, vector_file, idents, maxsize)
