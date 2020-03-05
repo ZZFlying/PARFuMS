@@ -115,9 +115,9 @@ def get_sequences(link_map, fasta_file, out_file):
             name = array[0].split('#')[0]
             if used[name]:
                 continue
-            if array[6] is '+' and 'start' in array[8]:
+            if array[6] == '+' and 'start' in array[8]:
                 continue
-            if array[6] is '-' and 'stop' in array[8]:
+            if array[6] == '-' and 'stop' in array[8]:
                 continue
             if 'stop' in array[8] and int(array[-1]) < 90:
                 continue
@@ -133,7 +133,7 @@ def get_sequences(link_map, fasta_file, out_file):
             if line.startswith('>'):
                 output = False
                 name = line.lstrip('>')
-                name = name.strip('\n')
+                name = name.strip()
                 if name in seq_name:
                     out.write(line)
                     output = True
@@ -232,7 +232,10 @@ def main(fr_file, cd_file, tempdir, ident, out_file):
                 system('cd-hit-est -i {} -o {} -G 0 -aS 0.99 -g 1 -r 1 -c 0.9'.format(to_map_file, link_out_file))
                 system("phrap -minmatch 10 -maxmatch 30 -bandwidth 0 -minscore 15 {}".format(link_out_file))
                 system("fr-hit -d {}.contigs -o {} -a {} -m 30".format(link_out_file, link_map_file, fasta_file))
-                clean_seq.update(clean_chimera(link_map_file, link_out_file + '.contigs'))
+                # clean_seq.update(clean_chimera(link_map_file, link_out_file + '.contigs'))
+                for (k, v) in clean_chimera(link_map_file, link_out_file + '.contigs').items():
+                    clean_seq['{}.{}'.format(k, count)] = v
+                    count += 1
 
     with open(out_file, 'w') as out:
         for (k, v) in contigs.items():
