@@ -28,6 +28,14 @@ def read_sequence(dif_seq):
                 out.write(line)
 
 
+def reverse(seq):
+    rec = seq[::-1]
+    rec = rec.upper()
+    return rec.translate(str.maketrans('ATCG', 'TAGC'))
+
+
 if __name__ == '__main__':
-    dif_seq = read_diff()
-    read_sequence(dif_seq)
+    # dif_seq = read_diff()
+    # read_sequence(dif_seq)
+    seq = ''
+    print(reverse(seq))

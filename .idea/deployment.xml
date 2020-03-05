@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="ubuntu@192.168.56.102:22" autoUploadExternalChanges="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="root@AliYun" autoUploadExternalChanges="true">
     <serverData>
+      <paths name="root@AliYun">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/root/PARFuMS" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="ubuntu@192.168.56.102:22">
         <serverdata>
           <mappings>
