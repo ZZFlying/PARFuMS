@@ -36,14 +36,18 @@ def merge_velvet(work_dir, temp_dir, split_file, suffix):
     return contigs
 
 
-def get_velvet(split_file, params):
+def get_velvet(split_file, temp_dir, params):
     script = list()
     (velveth_param, velvetg_param) = params
-    cmd = 'velveth assemble_{0} {1} {2}; velvetg assemble_{0} {3}\n'
+    # cmd = 'velveth assemble_{0} {1} {2} && velvetg assemble_{0} {3}\n'
     for (ident, files) in split_file.items():
         for file in files:
             filename = path.basename(file).split('.')[0]
-            temp = cmd.format(filename, velveth_param, file, velvetg_param)
+            assemble_dir = path.join(temp_dir, 'assemble_' + filename)
+            velveth_cmd = ' '.join(['velveth', assemble_dir, velveth_param, file])
+            velvetg_cmd = ' '.join(['velvetg', assemble_dir, velvetg_param])
+            temp = '{} && {}\n'.format(velveth_cmd, velvetg_cmd)
+            # temp = cmd.format(filename, velveth_param, file, velvetg_param)
             script.append(temp)
     return script
 
@@ -136,7 +140,7 @@ def make_script(run_type, temp_dir, suffix=None, idents=None, params=None,
         logging.info('Generating script file to run {}:{}'.format(run_type, job_filename))
         if run_type == 'velvet':
             logging.info('Writing Velvet script file')
-            script = get_velvet(split, params)
+            script = get_velvet(split, temp_dir, params)
         elif run_type == 'cd-hit-est':
             logging.info('Writing CD-HIT script file')
             script, out_file = get_cd_hit_est(contig, suffix)
