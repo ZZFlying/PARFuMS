@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-
-import sys, logging
+import os
+import sys
+import logging
+from multiprocessing import Pool, Manager
 
 from re import search
 from os import path, remove, mkdir
@@ -9,7 +11,7 @@ from math import ceil
 from shutil import copy
 from tempfile import TemporaryDirectory
 from time import sleep
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, CalledProcessError, check_call, Popen
 
 
 def create_tempdir(work_dir, prefix):
@@ -78,8 +80,46 @@ def split_fasta_files(process_file, out_dir, maxsize):
         results[ident] = split_list
     return results
 
+def executor_foo(task_queue, done_queue, id, work_dir):
+    try:
+        out_file = '{}.out'.format(id)
+        out_file = path.join(work_dir, out_file)
+        out_file = open(out_file, 'w')
+        mission = task_queue.get()
+        Popen(mission, shell=True, stdout=out_file, stderr=out_file).wait()
+        done_queue.put(True)
+    except CalledProcessError as e:
+        logging.ERROR(e.cmd)
+        done_queue.put(False)
+
 
 def submit_array(job_script, job_name, work_dir):
+    with open(job_script) as file:
+        job_list = list()
+        for line in file:
+            line = line.strip()
+            job_list.append(line)
+    task_queue = Manager().Queue()
+    done_queue = Manager().Queue()
+    with Pool() as executor:
+        logging.info('Waiting for job: {} to finish!'.format(job_name))
+        # for line in job_list:
+        for i in range(len(job_list)):
+            task_queue.put(job_list[i])
+            executor.apply_async(executor_foo, (task_queue, done_queue, i, work_dir))
+        finish_jobs = 0
+        executor.close()
+        executor.join()
+        logging.info('job {} finished...Will now check for errors'.format(job_name))
+        for line in job_list:
+            result = done_queue.get()
+            if result:
+                finish_jobs += 1
+        logging.info('success_cnt => {}'.format(finish_jobs))
+        logging.info('error_cnt => {}'.format(len(job_list) - finish_jobs))
+
+
+def submit_array_old(job_script, job_name, work_dir):
     with open(job_script) as file:
         job_count = len(file.readlines())
     step_size = ceil(job_count / 1000)
