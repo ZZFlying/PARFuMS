@@ -16,7 +16,8 @@ def read_inputSequences(work_dir, idents, suffix):
             input_sequences[ident] = filename
         else:
             logging.error('{} not exist'.format(filename))
-    logging.info('seq file stored')
+    logging.debug('read_inputSequences => ' + input_sequences.__str__())
+    logging.info('Seq file stored')
     return input_sequences
 
 
@@ -32,7 +33,7 @@ def get_phrap(seq_file, suffix, param):
             # cmd = 'phrap {} {} && cat $file\.contigs $file\.singlets $file\.problems > $OUTFILE'.format(param, file)
             cmd = str.join(' ', ['phrap', param, file, '&&', 'cat', phrap_file, '>', out_file])
             cmd = cmd + '\n'
-            logging.info('cmd => ' + cmd)
+            logging.debug('cmd => ' + cmd)
             contig_file[ident] = out_file
             script.append(cmd)
     return script, contig_file
@@ -44,8 +45,8 @@ def get_cd_hit_est(contig_file: dict, suffix):
     for (ident, file) in contig_file.items():
         dirname = path.dirname(file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
-        logging.info('Writing CD-HIT script file')
         cmd = 'cd-hit-est -i {} -o {} -g 1 -r 1 -c 0.9\n'.format(file, out_file)
+        logging.debug('cmd => ' + cmd)
         script.append(cmd)
         cdhit_file[ident] = out_file
     return script, cdhit_file
@@ -58,6 +59,7 @@ def get_fr_hit(seq_file, cdhit_file, suffix):
         dirname = path.dirname(mapping_file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
         cmd = 'fr-hit -a {} -d {} -m 30 -o {}\n'.format(mapping_file, cdhit_file[ident], out_file)
+        logging.debug('cmd => ' + cmd)
         script.append(cmd)
         frhit_file[ident] = out_file
     return script, frhit_file
@@ -74,6 +76,7 @@ def get_link_contigs(cdhit, frhit, temp_dir, suffix):
             out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
             cmd = str.join(' ', ['python3', perl_script, frhit[ident], cdhit[ident], temp_dir, ident, out_file])
             cmd += '\n'
+            logging.debug('cmd => ' + cmd)
             phrap_file[ident] = out_file
             script.append(cmd)
     return script, phrap_file
@@ -114,6 +117,7 @@ def make_script(run_type, temp_dir, suffix=None, idents=None, params=None,
     return job_file, out_file
 
 def round_1(work_dir, seq_file, phrap_file):
+    logging.info('Phrap Assembly Round-1 Started')
     directory = create_tempdir(work_dir, prefix='PhrapRun1_')
     temp_dir = directory.name
 
@@ -133,10 +137,12 @@ def round_1(work_dir, seq_file, phrap_file):
     submit_array(script, 'Link-contigs', temp_dir)
     logging.info('Link-contigs Run complete')
 
+    logging.info('Round-1 completed')
     return phrap_file
 
 
 def round_2(work_dir, phrap_file):
+    logging.info('Phrap Assembly Round-2 Started')
     directory = create_tempdir(work_dir, prefix='PhrapRun2_')
     temp_dir = directory.name
 
@@ -147,6 +153,9 @@ def round_2(work_dir, phrap_file):
     script, cdhit_file = make_script('cd-hit-est', temp_dir, contig=contig_file, suffix='phrap.cdhit2')
     submit_array(script, 'CD-hit2', temp_dir)
     logging.info('CD-hit-est Run complete')
+
+    logging.info('Round-2 completed')
+
 
 def main(work_dir, idents):
     logging.info('Step 5: PHRAP ASSEMBLY STARTED')

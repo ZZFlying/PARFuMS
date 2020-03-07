@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-import logging
-import string
 import sys
+import logging
 from os import path, mkdir
-from random import sample
 
 from sub.parfums_subs import create_tempdir, submit_array, read_fasta
 
@@ -18,7 +16,8 @@ def read_inputSequences(work_dir, idents, suffix):
             input_sequences[ident] = filename
         else:
             logging.error('{} not exist'.format(filename))
-    logging.info('seq file stored')
+    logging.debug('read_inputSequences => ' + input_sequences.__str__())
+    logging.info('Seq file stored')
     return input_sequences
 
 
@@ -26,6 +25,7 @@ def merge_velvet(work_dir, temp_dir, split_file, suffix):
     contigs = dict()
     for (ident, files) in split_file.items():
         out_file = path.join(work_dir, ident, '{}.{}'.format(ident, suffix))
+        logging.info('Now merging {} velvet contigs to {}'.format(ident, out_file))
         with open(out_file, 'w') as out:
             for file in files:
                 split_name = path.basename(file).split('.')[0]
@@ -33,6 +33,7 @@ def merge_velvet(work_dir, temp_dir, split_file, suffix):
                 with open(contig_file) as contig_in:
                     out.writelines(contig_in.readlines())
             contigs[ident] = out_file
+            logging.info('{} contigs merge completely'.format(out_file))
     return contigs
 
 
@@ -48,6 +49,7 @@ def get_velvet(split_file, temp_dir, params):
             velvetg_cmd = ' '.join(['velvetg', assemble_dir, velvetg_param])
             temp = '{} && {}\n'.format(velveth_cmd, velvetg_cmd)
             # temp = cmd.format(filename, velveth_param, file, velvetg_param)
+            logging.debug('cmd => ' + temp)
             script.append(temp)
     return script
 
@@ -58,8 +60,8 @@ def get_cd_hit_est(contig_file, suffix):
     for (ident, file) in contig_file.items():
         dirname = path.dirname(file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
-        logging.info('Writing CD-HIT script file')
         cmd = 'cd-hit-est -i {} -o {} -g 1 -r 1 -c 0.9\n'.format(file, out_file)
+        logging.debug('cmd => ' + cmd)
         script.append(cmd)
         cdhit_file[ident] = out_file
     return script, cdhit_file
@@ -72,6 +74,7 @@ def get_fr_hit(seq_file, cdhit_file, suffix):
         dirname = path.dirname(mapping_file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
         cmd = 'fr-hit -a {} -d {} -m 30 -o {}\n'.format(mapping_file, cdhit_file[ident], out_file)
+        logging.debug('cmd => ' + cmd)
         script.append(cmd)
         frhit_file[ident] = out_file
     return script, frhit_file
@@ -91,6 +94,7 @@ def get_remove_chimera(cdhit_file, frhit_file, idents, suffix):
         # cmd = str.join(' ', ['perl', perl_script, fr_file, cd_file, '>', out_file])
         cmd = str.join(' ', ['python3', perl_script, fr_file, cd_file, out_file])
         cmd = cmd + '\n'
+        logging.debug('cmd => ' + cmd)
         script.append(cmd)
         no_chimera_file[ident] = out_file
     return script, no_chimera_file
@@ -108,6 +112,7 @@ def get_unmapped_reads(seq_file, frhit_file, split_file, suffix):
         # cmd = str.join(' ', ['perl', perl_script, fr_file, file, ident, '>', out_file])
         cmd = str.join(' ', ['python3', perl_script, fr_file, file, out_file])
         cmd = cmd + '\n'
+        logging.debug('cmd => ' + cmd)
         script.append(cmd)
         split_file[ident] = [out_file]
     return script, split_file
@@ -120,6 +125,7 @@ def get_combine_contig(idents, cdhit_file, contig_file, suffix):
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
         cmd = str.join(' ', ['cat', cdhit_file[ident], contig_file[ident], '>', out_file])
         cmd = cmd + '\n'
+        logging.debug('cmd => ' + cmd)
         contig_file[ident] = out_file
         script.append(cmd)
     return script
@@ -170,12 +176,6 @@ def round_1(work_dir, seq_file, idents):
     logging.info('Velvet Assembly Round-1 Started')
     directory = create_tempdir(work_dir, prefix='VelvetRun1_')
     temp_dir = directory.name
-
-    # template = ''
-    # for l in sample(string.ascii_letters + string.digits, 5):
-    #     template += l
-    # temp_dir = path.join(work_dir, 'temp', 'VelvetRun1_' + template)
-    # mkdir(temp_dir)
 
     velveth_param = '31 -shortPaired'
     velvetg_param = '-cov_cutoff 10 -ins_length 100 -min_contig_lgth 100'
