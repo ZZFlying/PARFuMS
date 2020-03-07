@@ -4,6 +4,7 @@ import logging
 import traceback
 from os import path, mkdir
 
+from src.singleton_config import Config
 from src.load_barcode import load_barcode
 
 from src.preprocessing import main as preprocessing
@@ -14,10 +15,13 @@ from src.velvet_assembly import main as velvet_assembly
 from src.phrap_assembly import main as phrap_assembly
 
 
-def init_logger(work_dir):
+def init_logger(work_dir, logger_level):
+    levels = [logging.INFO, logging.DEBUG]
+    if logger_level > 1 or logger_level < 0:
+        logger_level = 1
     logging.basicConfig(
         filename=path.join(work_dir, 'parfums.log'),
-        level=logging.DEBUG,
+        level=levels[logger_level],
         format='%(asctime)s %(levelname)s %(module)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
@@ -46,43 +50,21 @@ def check_output_files(workdir, idents, step, suffix):
     if not_pass_list:
         not_pass_seq = ''.join([i for i in not_pass_list])
         logging.info('IDs not included at Step{}: {}'.format(step, not_pass_seq))
+    logging.debug('Check passed list:' + idents.__str__())
     return idents
+
 
 def make_output_dir(work_dir):
     preprocessed_files = path.join(work_dir, 'PreprocessedFiles')
     temp = path.join(work_dir, 'temp')
-    sub_script = path.join(temp, 'qsub_scripts')
     if not path.exists(work_dir):
         mkdir(work_dir)
         mkdir(preprocessed_files)
         mkdir(temp)
-        mkdir(sub_script)
     elif not path.exists(preprocessed_files):
         mkdir(preprocessed_files)
     elif not path.exists(temp):
         mkdir(temp)
-    elif not path.exists(sub_script):
-        mkdir(sub_script)
-
-
-def read_config(config_file):
-    with open(config_file) as config_in:
-        contig = dict()
-        for line in config_in:
-            if line.startswith('#'):
-                continue
-            line = line.strip()
-            array = line.split(':')
-            key = array[0].strip()
-            value = array[1].strip()
-            if value.isdigit():
-                value = int(value)
-            elif value.upper() == 'TRUE':
-                value = True
-            elif value.upper() == 'FALSE':
-                value = False
-            contig[key] = value
-        return contig
 
 
 def parse_step(step):
@@ -96,17 +78,17 @@ def parse_step(step):
     elif int(step) == 0:
         step_list = range(1, 6)
     else:
-        step_list = [int(step)]
+        step_list.append(int(step))
     return step_list
 
 if __name__ == '__main__':
-    config_file = sys.argv[1]
-    step = sys.argv[2]
-    config = read_config(config_file)
-    step_list = parse_step(step)
+    # config_file = sys.argv[1]
+    # step = sys.argv[2]
+    # config = Config(config_file)
+    # step_list = parse_step(step)
 
-    # config = read_config('examples/configs.yml')
-    # step_list = parse_step('3:5')
+    config = Config('examples/configs.yml')
+    step_list = parse_step('5')
 
     work_dir = config['work_dir']
     primer_file = config['primer_file']
@@ -114,11 +96,15 @@ if __name__ == '__main__':
     fw_file = config['FW_file']
     rc_file = config['RC_file']
     bc_file = config['BC_file']
-    mismatch = config['mismatch']
     maxsize = config['maxsize']
+    mismatch = config['mismatch']
+    logger_level = config['logger_level']
+
     make_output_dir(work_dir)
-    init_logger(work_dir)
+    init_logger(work_dir, logger_level)
     barcodes, idents, length = load_barcode(bc_file)
+
+    logging.debug('Loaded barcodes: ' + barcodes.__str__())
     try:
         for step in step_list:
             if step == 1:
