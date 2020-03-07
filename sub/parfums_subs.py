@@ -9,16 +9,20 @@ from os import path, remove, mkdir
 from glob import glob
 from math import ceil
 from shutil import copy
-from tempfile import TemporaryDirectory
 from time import sleep
-from subprocess import check_output, CalledProcessError, check_call, Popen
+from tempfile import TemporaryDirectory
 
+from src.temp_folder import AutoTempdir
+from src.singleton_config import Config
+from subprocess import check_output, CalledProcessError, Popen
 
 def create_tempdir(work_dir, prefix):
     tempdir = path.join(work_dir, 'temp')
-    if not path.exists(tempdir):
-        mkdir(tempdir)
-    directory = TemporaryDirectory(prefix=prefix, dir=tempdir)
+    # if not path.exists(tempdir):
+    #     mkdir(tempdir)
+    # directory = TemporaryDirectory(prefix=prefix, dir=tempdir)
+    directory = AutoTempdir(dir=tempdir, prefix=prefix, autodel=Config()['autodel'])
+    logging.info('Created temp folder: {}'.format(tempdir))
     return directory
 
 
@@ -41,6 +45,7 @@ def read_fasta(work_dir, tempdir, idents, maxsize, suffix):
             else:
                 copy(fasta_file, split_dir)
                 split_file[ident] = [path.join(split_dir, fasta_filename)]
+    logging.debug('process list:' + process_file.__str__())
     process_file = split_fasta_files(process_file, split_dir, maxsize)
     split_file.update(process_file)
     return split_file
@@ -101,7 +106,9 @@ def submit_array(job_script, job_name, work_dir):
             job_list.append(line)
     task_queue = Manager().Queue()
     done_queue = Manager().Queue()
-    with Pool() as executor:
+    threads = Config()['thread']
+    logging.info('Working with {} threads'.format(threads))
+    with Pool(processes=threads) as executor:
         logging.info('Waiting for job: {} to finish!'.format(job_name))
         # for line in job_list:
         for i in range(len(job_list)):
