@@ -82,13 +82,13 @@ def parse_step(step):
     return step_list
 
 if __name__ == '__main__':
-    # config_file = sys.argv[1]
-    # step = sys.argv[2]
-    # config = Config(config_file)
-    # step_list = parse_step(step)
+    config_file = sys.argv[1]
+    step = sys.argv[2]
+    config = Config(config_file)
+    step_list = parse_step(step)
 
-    config = Config('examples/configs.yml')
-    step_list = parse_step('5')
+    # config = Config('examples/configs.yml')
+    # step_list = parse_step('5')
 
     work_dir = config['work_dir']
     primer_file = config['primer_file']
