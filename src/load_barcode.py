@@ -4,6 +4,8 @@
 def load_barcode(file):
     try:
         with open(file) as IN:
+            # 尝试读取样本的barcode和标识
+            # 跳过#号开头的行数
             barcodes = dict()
             for line in IN.readlines():
                 if line.startswith('#'):

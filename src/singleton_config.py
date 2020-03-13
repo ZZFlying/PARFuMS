@@ -11,6 +11,7 @@ def Singleton(cls):
 
 def read_config(config_file):
     contig = dict()
+    # 读取配置文件，忽略#开头的行
     with open(config_file) as config_in:
         for line in config_in:
             if line.startswith('#'):
@@ -28,7 +29,7 @@ def read_config(config_file):
             contig[key] = value
     return contig
 
-
+# 装饰器实现单例模式
 @Singleton
 class Config(object):
     def __init__(self, config_file=None):

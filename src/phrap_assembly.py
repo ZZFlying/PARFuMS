@@ -9,6 +9,7 @@ step = 0
 
 
 def read_inputSequences(work_dir, idents, suffix):
+    # 返回suffix后缀文件的绝对路径
     input_sequences = dict()
     for ident in idents:
         filename = path.join(work_dir, ident, '{}.{}'.format(ident, suffix))
@@ -25,6 +26,8 @@ def get_phrap(seq_file, suffix, param):
     logging.info('Inside get phrap cmd function')
     contig_file = dict()
     script = list()
+    # phrap组装后生成三份序列文件，合并输出到一个文件
+    # 返回组成生成configs文件的绝对路径
     for (ident, file) in seq_file.items():
         if path.exists(file):
             dirname = path.dirname(file)
@@ -39,9 +42,10 @@ def get_phrap(seq_file, suffix, param):
     return script, contig_file
 
 
-def get_cd_hit_est(contig_file: dict, suffix):
+def get_cd_hit_est(contig_file, suffix):
     script = list()
     cdhit_file = dict()
+    # 对传入序列文件去重，返回去重文件的绝对路径
     for (ident, file) in contig_file.items():
         dirname = path.dirname(file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
@@ -55,6 +59,7 @@ def get_cd_hit_est(contig_file: dict, suffix):
 def get_fr_hit(seq_file, cdhit_file, suffix):
     script = list()
     frhit_file = dict()
+    # 生成seq文件映射到去重后序列的映射关系文件
     for (ident, mapping_file) in seq_file.items():
         dirname = path.dirname(mapping_file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))

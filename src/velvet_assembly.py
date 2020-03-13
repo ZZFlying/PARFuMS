@@ -9,6 +9,7 @@ step = 0
 
 
 def read_inputSequences(work_dir, idents, suffix):
+    # 返回suffix后缀文件的绝对路径
     input_sequences = dict()
     for ident in idents:
         filename = path.join(work_dir, ident, '{}.{}'.format(ident, suffix))
@@ -40,7 +41,6 @@ def merge_velvet(work_dir, temp_dir, split_file, suffix):
 def get_velvet(split_file, temp_dir, params):
     script = list()
     (velveth_param, velvetg_param) = params
-    # cmd = 'velveth assemble_{0} {1} {2} && velvetg assemble_{0} {3}\n'
     for (ident, files) in split_file.items():
         for file in files:
             filename = path.basename(file).split('.')[0]
@@ -48,7 +48,6 @@ def get_velvet(split_file, temp_dir, params):
             velveth_cmd = ' '.join(['velveth', assemble_dir, velveth_param, file])
             velvetg_cmd = ' '.join(['velvetg', assemble_dir, velvetg_param])
             temp = '{} && {}\n'.format(velveth_cmd, velvetg_cmd)
-            # temp = cmd.format(filename, velveth_param, file, velvetg_param)
             logging.debug('cmd => ' + temp)
             script.append(temp)
     return script
@@ -84,14 +83,12 @@ def get_remove_chimera(cdhit_file, frhit_file, idents, suffix):
     script = list()
     no_chimera_file = dict()
     perl_script = sys.path[0]
-    # perl_script = path.join(perl_script, 'sub', 'FR-Hit_cleanChimera.pl')
     perl_script = path.join(perl_script, 'sub', 'FR-Hit_cleanChimera.py')
     for ident in idents:
         fr_file = frhit_file[ident]
         cd_file = cdhit_file[ident]
         dirname = path.dirname(cd_file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
-        # cmd = str.join(' ', ['perl', perl_script, fr_file, cd_file, '>', out_file])
         cmd = str.join(' ', ['python3', perl_script, fr_file, cd_file, out_file])
         cmd = cmd + '\n'
         logging.debug('cmd => ' + cmd)
@@ -103,13 +100,12 @@ def get_remove_chimera(cdhit_file, frhit_file, idents, suffix):
 def get_unmapped_reads(seq_file, frhit_file, split_file, suffix):
     script = list()
     perl_script = sys.path[0]
-    # perl_script = path.join(perl_script, 'sub', 'FR-Hit_get_unmapped.pl')
     perl_script = path.join(perl_script, 'sub', 'FR-Hit_get_unmapped.py')
+    # 获取没有被使用的read序列
     for (ident, file) in seq_file.items():
         fr_file = frhit_file[ident]
         dirname = path.dirname(file)
         out_file = path.join(dirname, '{}.{}'.format(ident, suffix))
-        # cmd = str.join(' ', ['perl', perl_script, fr_file, file, ident, '>', out_file])
         cmd = str.join(' ', ['python3', perl_script, fr_file, file, out_file])
         cmd = cmd + '\n'
         logging.debug('cmd => ' + cmd)
@@ -215,12 +211,6 @@ def round_2(work_dir, seq_file, split_file, cdhit_file, idents):
     logging.info('Velvet Assembly Round-2 Started')
     directory = create_tempdir(work_dir, prefix='VelvetRun2_')
     temp_dir = directory.name
-
-    # template = ''
-    # for l in sample(string.ascii_letters + string.digits, 5):
-    #     template += l
-    # temp_dir = path.join(work_dir, 'temp', 'VelvetRun2_' + template)
-    # mkdir(temp_dir)
 
     velveth_param = '31 -shortPaired'
     velvetg_param = '-cov_cutoff 7 -ins_length 80 -min_contig_lgth 100'

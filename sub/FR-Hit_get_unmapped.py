@@ -43,6 +43,7 @@ def process_array(arrays, used):
 
 
 def get_seq_name(fr_file):
+    # 原始序列到目标序列的映射关系，获取被使用过的序列名
     with open(fr_file) as fr_in:
         temp = ''
         seq_list = list()
@@ -69,6 +70,7 @@ def get_seq_name(fr_file):
 
 
 def get_unmapped_seq(seq_file, seq_name, out_file):
+    # 如果读取的序列不在已使用的列表，输出该序列
     with open(seq_file) as seq_in, open(out_file, 'w') as out:
         for line in seq_in:
             if line.startswith('>'):

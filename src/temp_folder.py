@@ -31,7 +31,7 @@ def mkdtemp(suffix=None, prefix=None, path=None):
 
 
 class AutoTempdir(object):
-
+    # 生成临时文件夹，根据设置决定失去失去引用后是否删除
     def __init__(self, suffix=None, prefix=None, dir=None, autodel=True):
         self.name = mkdtemp(suffix, prefix, dir)
         self._autodel = autodel

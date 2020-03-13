@@ -9,6 +9,7 @@ def create_output_files(work_dir, barcodes, mismatch):
     tempdir = path.join(work_dir, 'PreprocessedFiles')
     if not path.exists(tempdir):
         mkdir(tempdir)
+    # 创建每个样本对应FW和RC的文件io
     for (barcode, ident) in barcodes.items():
         filename = path.join(tempdir, ident)
         fw = open(filename + '_FW.fq', 'w')
@@ -73,13 +74,15 @@ def main(fw_file, rc_file, work_dir, barcodes, length, mismatch):
                     rev_seq = rc.readline()
                     rev_plus = rc.readline()
                     rev_qual = rc.readline()
-
+                    # 根据读取的barcode获得对应样本的文件io
+                    # 输出读取的序列到对应的文件
                     if fwd_bar in barcodes and fwd_bar == rev_bar:
                         out_fw, out_rc = out_file_handles[barcodes[fwd_bar]]
                         out_fw.writelines([fwd_id, fwd_seq, fwd_plus, fwd_qual])
                         out_rc.writelines([rev_id, rev_seq, rev_plus, rev_qual])
                         read_seqs[barcodes[fwd_bar]] += 1
                     elif mismatch:
+                        # 输出无法匹配任何样本的序列
                         out_fw, out_rc = out_file_handles['Mismatch']
                         out_fw.writelines([fwd_id, fwd_seq, fwd_plus, fwd_qual])
                         out_rc.writelines([rev_id, rev_seq, rev_plus, rev_qual])
@@ -87,7 +90,7 @@ def main(fw_file, rc_file, work_dir, barcodes, length, mismatch):
 
                 fwd_line = fw.readline()
                 rev_line = rc.readline()
-
+            # 安全关闭文件io，保障所有序列的正常写入文件
             close_file(out_file_handles)
             write_summary(work_dir, read_seqs, total)
     except FileNotFoundError:

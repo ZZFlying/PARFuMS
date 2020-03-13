@@ -6,6 +6,7 @@ from re import search
 
 
 def get_vector_seq():
+    # 从控制台读取序列映射到引物序列的映射关系
     with fileinput.input(files='-') as stdin:
         seqs = set()
         vector = set()
@@ -20,6 +21,8 @@ def get_vector_seq():
                 end_pos = arr[6]
                 left_bp = int(search('(\d+)', arr[7]).group(0))
                 ignore = True
+                # 映射在序列两侧，或覆盖度大于85%
+                # 丢弃该序列
                 if seq_name in seqs:
                     ignore = False
                 if start_pos <= 5 or left_bp <= 5:

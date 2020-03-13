@@ -10,6 +10,7 @@ def get_primer_seq():
         seqs = set()
         primer = dict()
         switch = False
+        # 从控制台读取序列映射到引物序列的映射关系
         for line in stdin:
             if 'Num. pairs' in line:
                 switch = True
@@ -19,9 +20,10 @@ def get_primer_seq():
                 start_pos = arr[5]
                 end_pos = arr[6]
                 left_bp = int(search('(\d+)', arr[7]).group(0))
+                # 引物映射的位置应该在序列的两端
                 if start_pos <= 5:
                     primer[seq_name] = [0, end_pos]
-                if left_bp <= 5:
+                elif left_bp <= 5:
                     primer[seq_name] = [start_pos - 1, end_pos + left_bp]
                 else:
                     seq_name = seq_name.split('#')[0]
@@ -44,15 +46,19 @@ def clean_primer(fasta_file, seqs, primer, out_file):
                 line = file_in.readline()
                 name_rc = line.lstrip('>').strip()
                 seq_rc = file_in.readline().strip()
+                # 读取的序列必须为同一条
                 if seq_name not in name_rc:
                     print("Second sequence doesn't match name")
                     exit(1)
+                # N为序列中不确定的碱基，可表示为任意ACTG
+                # 连续的N越长或N的数量越多，该序列质量越低
                 if search('NNNNN+', seq_fw) \
                         or search('NNNN+', seq_rc) \
                         or seq_fw.count('N') + seq_rc.count('N') > 6 \
                         or seq_name in seqs:
                     line = file_in.readline()
                     continue
+                # 移除引物序列对应的部分
                 if name_fw in primer:
                     pos = primer[name_fw]
                     primer_seq = seq_fw[pos[0]:pos[1]]

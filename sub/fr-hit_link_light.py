@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 
 
 def read_contigs(file):
+    # 读取需要处理的序列
     contigs = defaultdict(str)
     length = defaultdict(int)
     with open(file) as cd_in:
@@ -27,6 +28,7 @@ def process_array(array, length, links):
         ref_name = mapping[0]
         map_seq.add(map_name)
         ref_seq.add(ref_name)
+    # 一条read的两条链各唯一映射一条长序列
     if len(array) != 2 or len(map_seq) != 2 or len(ref_seq) != 2:
         return
 
@@ -34,7 +36,8 @@ def process_array(array, length, links):
     seq_fw = [int(x) if x.isdigit() else x for x in seq_fw]
     seq_rc = [int(x) if x.isdigit() else x for x in seq_rc]
     map_fw, map_rc = seq_fw[8], seq_rc[8]
-
+    # 生成两条长序列连接的方式
+    # 长序列应该首尾相接
     if seq_fw[6] == '+':
         link = 'stop_1' if seq_fw[-1] > length[map_fw] - 100 else 'weird1'
     else:
@@ -44,7 +47,7 @@ def process_array(array, length, links):
         link += '!stop_2' if seq_rc[-1] > length[map_rc] - 100 else '!weird2'
     else:
         link += '!start_2' if seq_rc[-2] < 100 else '!weird_2'
-
+    # 统计两条长序列不同连接方式的次数
     if 'weird' not in link:
         fw_rc = '{}!{}'.format(map_fw, map_rc)
         rc_fw = '{}!{}'.format(map_rc, map_fw)
@@ -66,6 +69,7 @@ def process_array(array, length, links):
 
 
 def check_links(fr_file, length):
+    # 根据映射关系获得两条长序列的链接关系
     with open(fr_file) as fr_in:
         temp = ''
         mapping = list()
@@ -187,8 +191,11 @@ def clean_chimera(fr_file, seq_file):
 
 
 def main(fr_file, cd_file, tempdir, ident, out_file):
+    # 读取要处理的长序列
     contigs, length = read_contigs(cd_file)
+    # 获得长序列的不同连接关系次数
     links = check_links(fr_file, length)
+    # 确定进行处理的阈值
     threshold = update_link_threshold(links)
 
     dirname = path.dirname(out_file)
@@ -204,15 +211,17 @@ def main(fr_file, cd_file, tempdir, ident, out_file):
     modify = dict()
     clean_seq = dict()
     skip = defaultdict(bool)
+    # 每对长序列的每种连接方式
     for (combine_name, link) in links.items():
         for (pos, link_num) in link.items():
             if link_num >= threshold:
+                # 获取两条长序列名和连接方式
                 name = combine_name.split('!')
                 pos = pos.split('!')
 
+                # 根据连接方式截取长序列的100个碱基，连接序列
                 contig = contigs[name[0]]
                 sub1 = contig[0:100] if 'start' in pos[0] else contig[-100:]
-
                 contig = contigs[name[1]]
                 sub2 = contig[0:100] if 'start' in pos[1] else contig[-100:]
 
@@ -221,6 +230,9 @@ def main(fr_file, cd_file, tempdir, ident, out_file):
                 skip[name[0]] = True
                 skip[name[1]] = True
                 count += 1
+                # 原始序列文件映射到连接序列，获取映射的序列
+                # 追加到连接序列中进行组装
+                # 输出去除嵌合体的序列
                 with open(to_map_file, 'w') as output:
                     output.write('>{}_{}\n'.format(pos[0], name[0]))
                     output.write(sub1 + '\n')
@@ -232,7 +244,8 @@ def main(fr_file, cd_file, tempdir, ident, out_file):
                 system("phrap -minmatch 10 -maxmatch 30 -bandwidth 0 -minscore 15 {}".format(link_out_file))
                 system("fr-hit -d {}.contigs -o {} -a {} -m 30".format(link_out_file, link_map_file, fasta_file))
                 # clean_seq.update(clean_chimera(link_map_file, link_out_file + '.contigs'))
-                for (k, v) in clean_chimera(link_map_file, link_out_file + '.contigs').items():
+                no_chimera = clean_chimera(link_map_file, link_out_file + '.contigs')
+                for (k, v) in no_chimera.items():
                     clean_seq['{}.{}'.format(k, count)] = v
                     count += 1
 
