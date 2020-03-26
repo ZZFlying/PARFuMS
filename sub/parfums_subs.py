@@ -16,6 +16,7 @@ from src.temp_folder import AutoTempdir
 from src.singleton_config import Config
 from subprocess import check_output, CalledProcessError, Popen
 
+
 def create_tempdir(work_dir, prefix):
     tempdir = path.join(work_dir, 'temp')
     # if not path.exists(tempdir):
@@ -85,9 +86,10 @@ def split_fasta_files(process_file, out_dir, maxsize):
         results[ident] = split_list
     return results
 
-def executor_foo(task_queue, done_queue, id, work_dir):
+
+def executor_foo(task_queue, done_queue, Id, work_dir):
     try:
-        out_file = '{}.out'.format(id)
+        out_file = '{}.out'.format(Id)
         out_file = path.join(work_dir, out_file)
         out_file = open(out_file, 'w')
         mission = task_queue.get()
@@ -118,7 +120,7 @@ def submit_array(job_script, job_name, work_dir):
         executor.close()
         executor.join()
         logging.info('job {} finished...Will now check for errors'.format(job_name))
-        for line in job_list:
+        for i in range(len(job_list)):
             result = done_queue.get()
             if result:
                 finish_jobs += 1

@@ -87,6 +87,7 @@ def parse_step(step):
         step_list.append(int(step))
     return step_list
 
+
 if __name__ == '__main__':
     config_file = sys.argv[1]
     step = sys.argv[2]
