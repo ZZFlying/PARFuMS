@@ -8,7 +8,8 @@ def load_barcode(file):
             # 跳过#号开头的行数
             barcodes = dict()
             for line in IN.readlines():
-                if line.startswith('#'):
+                line = line.strip()
+                if line.startswith('#') or not line:
                     continue
                 barcode, ident = line.split()
                 barcode = barcode.upper()

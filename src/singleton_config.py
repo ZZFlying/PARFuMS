@@ -14,9 +14,9 @@ def read_config(config_file):
     # 读取配置文件，忽略#开头的行
     with open(config_file) as config_in:
         for line in config_in:
-            if line.startswith('#'):
-                continue
             line = line.strip()
+            if line.startswith('#') or not line:
+                continue
             array = line.split(':')
             key = array[0].strip()
             value = array[1].strip()
