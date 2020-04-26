@@ -4,6 +4,8 @@ import logging
 import traceback
 from os import path, mkdir
 
+import argparse
+
 from src.singleton_config import Config
 from src.load_barcode import load_barcode
 
@@ -14,6 +16,42 @@ from src.remove_vector import main as remove_vector
 from src.velvet_assembly import main as velvet_assembly
 from src.phrap_assembly import main as phrap_assembly
 
+
+def print_info():
+    print('''
+    # 双端序列文件，fastq.gz格式
+    FW_file: /root/PARFuMS/datasets/FW.fastq.gz
+    RC_file: /root/PARFuMS/datasets/RC.fastq.gz
+    # Barcode文件
+    # Barcode   Name
+    # GGGGGGGG  样本名
+    BC_file: /root/PARFuMS/examples/barcode.txt
+    # 输出文件夹，按样本名区分
+    work_dir: /root/PARFuMS/output
+    # 引物和载体序列文件，fasta格式
+    primer_file: /root/PARFuMS/datasets/primer.fasta
+    vector_file: /root/PARFuMS/datasets/vector.fasta
+    # 是否输出无法确定样本的read
+    mismatch: true
+    # 用于组装的最大read数
+    maxsize: 8000000
+    # 运行时的最大进程数
+    thread: 8
+    # 自动删除运行过程中产生的临时文件
+    autodel: true
+    # 日志记录等级
+    # info = 0; debug = 1
+    logger_level: 0
+    ''')
+
+
+def info():
+    parse = argparse.ArgumentParser(description='Auto assembly NGS data.')
+    parse.add_argument('config', help='配置文件路径', )
+    parse.add_argument('step', help='运行指定步骤，为0全运行。'
+                                    '多个步骤如第2步到第5步使用2:5表示。')
+    _argv = parse.parse_args()
+    return _argv
 
 def init_logger(work_dir, logger_level):
     levels = [logging.INFO, logging.DEBUG]
@@ -89,8 +127,9 @@ def parse_step(step):
 
 
 if __name__ == '__main__':
-    config_file = sys.argv[1]
-    step = sys.argv[2]
+    argv = info()
+    step = argv.step
+    config_file = argv.config
     # 生成单例的Config类, 方便其他模块直接访问参数
     config = Config(config_file)
     step_list = parse_step(step)
