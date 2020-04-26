@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import gzip
 import logging
 from os import path, mkdir
 
@@ -48,7 +49,8 @@ def close_file(file_handles):
 
 def main(fw_file, rc_file, work_dir, barcodes, length, mismatch):
     try:
-        with open(fw_file) as fw, open(rc_file) as rc:
+        _open = gzip.open if fw_file.split('.')[-1] == 'gz' else open
+        with _open(fw_file) as fw, _open(rc_file) as rc:
             logging.info('STEP 1: PREPROCESSING OF FASTA FILES STARTED')
 
             fw_filename = path.basename(fw_file)
