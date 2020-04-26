@@ -50,7 +50,7 @@ def close_file(file_handles):
 def main(fw_file, rc_file, work_dir, barcodes, length, mismatch):
     try:
         _open = gzip.open if fw_file.split('.')[-1] == 'gz' else open
-        with _open(fw_file) as fw, _open(rc_file) as rc:
+        with _open(fw_file, 'rt') as fw, _open(rc_file, 'rt') as rc:
             logging.info('STEP 1: PREPROCESSING OF FASTA FILES STARTED')
 
             fw_filename = path.basename(fw_file)
