@@ -155,7 +155,7 @@ def round_2(work_dir, phrap_file):
     script, contig_file = make_script('phrap', temp_dir, seq=phrap_file, suffix='phrapContigs2.fasta', params=phrap_param)
     submit_array(script, 'PhrapRun2', temp_dir)
 
-    script, cdhit_file = make_script('cd-hit-est', temp_dir, contig=contig_file, suffix='phrap.cdhit2.fasta')
+    script, cdhit_file = make_script('cd-hit-est', temp_dir, contig=contig_file, suffix='phrap.fasta')
     submit_array(script, 'CD-hit2', temp_dir)
     logging.info('CD-hit-est Run complete')
 
