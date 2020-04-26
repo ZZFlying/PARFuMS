@@ -5,13 +5,13 @@ from random import randint
 from subprocess import check_output, check_call, CalledProcessError
 
 
-def merge_fastq(fw_file, rc_file, merge_file):
+def merge_fq2fa(fw_file, rc_file, fasta_file):
     # 合并FW和RC的fastq文件，FW的read后紧跟RC对应的read
     # @seq#0_0
     # ...
     # @seq#0_1
     # ...
-    with open(fw_file) as fw, open(rc_file) as rc, open(merge_file, 'w') as output:
+    with open(fw_file) as fw, open(rc_file) as rc, open(fasta_file, 'w') as output:
         fwd_line = fw.readline()
         rev_line = rc.readline()
         while fwd_line and rev_line:
@@ -19,15 +19,17 @@ def merge_fastq(fw_file, rc_file, merge_file):
                 fwd_id = fwd_line.split('#')[0]
                 rev_id = rev_line.split('#')[0]
                 if fwd_id == rev_id:
+                    fwd_line = '>' + fwd_line[1:]
                     fwd_seq = fw.readline()
                     fwd_plus = fw.readline()
                     fwd_qual = fw.readline()
 
+                    rev_line = '>' + rev_line[1:]
                     rev_seq = rc.readline()
                     rev_plus = rc.readline()
                     rev_qual = rc.readline()
-                    output.writelines([fwd_line, fwd_seq, fwd_plus, fwd_qual])
-                    output.writelines([rev_line, rev_seq, rev_plus, rev_qual])
+                    output.writelines([fwd_line, fwd_seq])
+                    output.writelines([rev_line, rev_seq])
             fwd_line = fw.readline()
             rev_line = rc.readline()
 
@@ -49,7 +51,7 @@ def random_select(fw_file, rc_file, count, filename, maxsize):
     return fw_sample, rc_sample
 
 
-def check_read(fw_file, rc_file, merge_file, maxsize):
+def check_read(fw_file, rc_file, fasta_file, maxsize):
     # fastq格式四行对应一条序列，每四行输出一行1，统计行数计算文件中的read数
     awk = "awk 'NR%4 == 1' {} | wc -l"
     fw_count = check_output(awk.format(fw_file), shell=True)
@@ -65,7 +67,7 @@ def check_read(fw_file, rc_file, merge_file, maxsize):
     elif fw_count == rc_count:
         if fw_count > maxsize:
             fw_file, rc_file = random_select(fw_file, rc_file, fw_count, filename, maxsize)
-        merge_fastq(fw_file, rc_file, merge_file)
+        merge_fq2fa(fw_file, rc_file, fasta_file)
         return True
     else:
         logging.error('FW and RV file has unequal entries: {}: {} '
@@ -86,16 +88,10 @@ def main(work_dir, idents, maxsize):
                 mkdir(out_file)
             fw_file = path.join(fastq_dir, '{}_FW.fq'.format(ident))
             rc_file = path.join(fastq_dir, '{}_RC.fq'.format(ident))
-            merge_file = path.join(fastq_dir, '{}.fastq'.format(ident))
             fasta_file = path.join(out_file, '{}.fasta'.format(ident))
             # 判定分箱的fastq文件是否正确
             # 合并FW和RC文件后将fastq格式转换成fasta格式
-            if check_read(fw_file, rc_file, merge_file, maxsize):
-                fq2fa = 'seqtk seq -a {} > {}'.format(merge_file, fasta_file)
-                try:
-                    check_call(fq2fa, shell=True)
-                    logging.info('{} created'.format(path.basename(fasta_file)))
-                except CalledProcessError:
-                    logging.error('Error in executing seq-tk program: {}'.format(fq2fa))
+            check_read(fw_file, rc_file, fasta_file, maxsize)
+            logging.info('{} created'.format(path.basename(fasta_file)))
     else:
         logging.error('Error: Directory doesnt exists')
