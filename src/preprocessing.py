@@ -79,7 +79,7 @@ def compress_multi(files_list):
         logging.info(gz_file + ' had created.')
 
 
-def main(fw_file, rc_file, work_dir, barcodes, mismatch):
+def main(fw_file, rc_file, work_dir, barcodes, is_gzip, mismatch):
     try:
         logging.info('STEP 1: PREPROCESSING OF FASTA FILES STARTED')
         with fastqReader(fw_file) as fw_in, fastqReader(rc_file) as rc_in:
@@ -101,7 +101,7 @@ def main(fw_file, rc_file, work_dir, barcodes, mismatch):
             # 安全关闭文件io，保障所有序列的正常写入文件
             close_file(file_handles)
             write_summary(work_dir, read_count, total)
-            if Config()['gzip']:
+            if is_gzip:
                 compress_multi(files_list)
     except FileNotFoundError:
         logging.error('Failed to open file')
