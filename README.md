@@ -57,6 +57,7 @@
 
    ```
    python3 wrapper.py config_file step[1:6|0|N1:N2]
+   0是运行步骤，2是只运行step2，2:4是从step2运行到step4.
    
    步骤说明：
    Step 1： 序列文件分割，创建测序样本文件夹，FASTQ格式转换为FASTA，输出ID.fasta
