@@ -1,37 +1,23 @@
 #!/usr/bin/env python3
 import logging
-from os import path, mkdir
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from os import path, mkdir, remove, system
 from random import randint
-from subprocess import check_output, check_call, CalledProcessError
+from subprocess import check_output
+
+from src.singleton_config import Config
 
 
-def merge_fq2fa(fw_file, rc_file, fasta_file):
-    # 合并FW和RC的fastq文件，FW的read后紧跟RC对应的read
-    # @seq#0_0
-    # ...
-    # @seq#0_1
-    # ...
-    with open(fw_file) as fw, open(rc_file) as rc, open(fasta_file, 'w') as output:
-        fwd_line = fw.readline()
-        rev_line = rc.readline()
-        while fwd_line and rev_line:
-            if fwd_line.startswith('@') and rev_line.startswith('@'):
-                fwd_id = fwd_line.split('#')[0]
-                rev_id = rev_line.split('#')[0]
-                if fwd_id == rev_id:
-                    fwd_line = '>' + fwd_line[1:]
-                    fwd_seq = fw.readline()
-                    fwd_plus = fw.readline()
-                    fwd_qual = fw.readline()
+def fastq2fasta(fastq_file, fasta_file):
+    change_cmd = 'seqtk seq -a {} > {}'.format(fastq_file, fasta_file)
+    check_output(change_cmd, shell=True)
+    logging.info('{} created'.format(path.basename(fasta_file)))
 
-                    rev_line = '>' + rev_line[1:]
-                    rev_seq = rc.readline()
-                    rev_plus = rc.readline()
-                    rev_qual = rc.readline()
-                    output.writelines([fwd_line, fwd_seq])
-                    output.writelines([rev_line, rev_seq])
-            fwd_line = fw.readline()
-            rev_line = rc.readline()
+
+def merge_paired(fw_file, rc_file, fastq_file):
+    merge_cmd = 'seqtk mergepe {} {} > {}'.format(fw_file, rc_file, fastq_file)
+    check_output(merge_cmd, shell=True)
+    logging.info('{} created'.format(path.basename(fastq_file)))
 
 
 def random_select(fw_file, rc_file, count, filename, maxsize):
@@ -46,33 +32,65 @@ def random_select(fw_file, rc_file, count, filename, maxsize):
     logging.info('There exists {} reads in the given fasta file. '
                  'Thus, approx. {:.2f} percent of reads will '
                  'be used in the remainder of assembly pipeline'.format(filename, percent))
-    check_call(fw_seqtk, shell=True)
-    check_call(rc_seqtk, shell=True)
+    check_output(fw_seqtk, shell=True)
+    check_output(rc_seqtk, shell=True)
     return fw_sample, rc_sample
 
 
-def check_read(fw_file, rc_file, fasta_file, maxsize):
+def check_count(fw_file, rc_file, is_gzip):
     # fastq格式四行对应一条序列，每四行输出一行1，统计行数计算文件中的read数
     awk = "awk 'NR%4 == 1' {} | wc -l"
-    fw_count = check_output(awk.format(fw_file), shell=True)
-    fw_count = int(fw_count)
-    rc_count = check_output(awk.format(rc_file), shell=True)
-    rc_count = int(rc_count)
+    if is_gzip:
+        awk = "zcat {} | awk 'NR%4 == 1'| wc -l"
+    fw_count = int(check_output(awk.format(fw_file), shell=True))
+    rc_count = int(check_output(awk.format(rc_file), shell=True))
+    return fw_count, rc_count
+
+
+def compress(filename):
+    cmd = 'gzip -f {}'.format(filename)
+    system(cmd)
+    logging.info('Gzip  {}'.format(filename))
+
+
+def foo(work_dir, ident, fastq_dir, is_gzip, maxsize):
+    out_file = path.join(work_dir, ident)
+    # 创建样本的工作目录,后续中间结果文件均存放到对应的样本工作目录
+    if not path.exists(out_file):
+        mkdir(out_file)
+    fw_file = path.join(fastq_dir, '{}_FW.fq'.format(ident))
+    rc_file = path.join(fastq_dir, '{}_RC.fq'.format(ident))
+    merge_file = path.join(fastq_dir, '{}.fastq'.format(ident))
+    fasta_file = path.join(out_file, '{}.fasta'.format(ident))
+    if is_gzip:
+        fw_file += '.gz'
+        rc_file += '.gz'
+    # 判定分箱的fastq文件是否正确
+    # 合并FW和RC文件后将fastq格式转换成fasta格式
     filename = path.basename(fw_file)
+    fw_count, rc_count = check_count(fw_file, rc_file, is_gzip)
     logging.info('SampleID => {}\tFW_reads => {}\tRV_reads => {}'.format(filename, fw_count, rc_count))
     # FW的read数应该与RC中的read数相等
     # 如果样本的read数大于设定值，进行read筛选
     if fw_count == 0 and rc_count == 0:
         logging.info('No reads in {} file: 0 and 0'.format(filename))
     elif fw_count == rc_count:
+        is_select = False
         if fw_count > maxsize:
             fw_file, rc_file = random_select(fw_file, rc_file, fw_count, filename, maxsize)
-        merge_fq2fa(fw_file, rc_file, fasta_file)
-        return True
+            is_select = True
+        merge_paired(fw_file, rc_file, merge_file)
+        fastq2fasta(merge_file, fasta_file)
+        remove(merge_file)
+        if is_select:
+            remove(fw_file)
+            remove(rc_file)
+        if is_gzip:
+            compress(fasta_file)
+        return fasta_file
     else:
-        logging.error('FW and RV file has unequal entries: {}: {} '
+        logging.error('FW and RC file has unequal entries: {}: {} '
                       'and {}: {}'.format(fw_file, fw_count, rc_file, rc_count))
-    return False
 
 
 def main(work_dir, idents, maxsize):
@@ -80,18 +98,16 @@ def main(work_dir, idents, maxsize):
     fastq_dir = path.join(work_dir, 'PreprocessedFiles')
     logging.info('Converting fastq to fasta format')
     logging.info('Maximum number of reads allowed:{}'.format(maxsize))
+    is_gzip = Config()['gzip']
     if path.exists(fastq_dir):
+        result = list()
+        threads = Config()['thread']
+        pool = ThreadPoolExecutor(threads)
         for ident in idents:
-            out_file = path.join(work_dir, ident)
-            # 创建样本的工作目录,后续中间结果文件均存放到对应的样本工作目录
-            if not path.exists(out_file):
-                mkdir(out_file)
-            fw_file = path.join(fastq_dir, '{}_FW.fq'.format(ident))
-            rc_file = path.join(fastq_dir, '{}_RC.fq'.format(ident))
-            fasta_file = path.join(out_file, '{}.fasta'.format(ident))
-            # 判定分箱的fastq文件是否正确
-            # 合并FW和RC文件后将fastq格式转换成fasta格式
-            check_read(fw_file, rc_file, fasta_file, maxsize)
-            logging.info('{} created'.format(path.basename(fasta_file)))
+            result.append(pool.submit(foo, work_dir, ident, fastq_dir, is_gzip, maxsize))
+        for future in as_completed(result):
+            fasta_file = future.result()
+            logging.info(fasta_file + 'had created.')
     else:
         logging.error('Error: Directory doesnt exists')
+    logging.info("Format Conversion done successfully")
