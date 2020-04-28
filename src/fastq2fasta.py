@@ -17,7 +17,7 @@ def fastq2fasta(fastq_file, fasta_file):
 def merge_paired(fw_file, rc_file, fastq_file):
     merge_cmd = 'seqtk mergepe {} {} > {}'.format(fw_file, rc_file, fastq_file)
     check_output(merge_cmd, shell=True)
-    logging.info('{} created'.format(path.basename(fastq_file)))
+    logging.info('{} merged'.format(path.basename(fastq_file)))
 
 
 def random_select(fw_file, rc_file, count, filename, maxsize):
@@ -106,7 +106,8 @@ def main(work_dir, idents, is_gzip, maxsize):
             result.append(pool.submit(foo, work_dir, ident, fastq_dir, is_gzip, maxsize))
         for future in as_completed(result):
             fasta_file = future.result()
-            logging.info(fasta_file + 'had created.')
+            fasta_file = fasta_file + '.gz'
+            logging.info(fasta_file + ' had created.')
     else:
         logging.error('Error: Directory doesnt exists')
     logging.info("Format Conversion done successfully")
