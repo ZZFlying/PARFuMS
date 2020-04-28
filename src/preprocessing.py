@@ -79,7 +79,7 @@ def compress_multi(files_list):
         logging.info(gz_file + ' had created.')
 
 
-def main(fw_file, rc_file, work_dir, barcodes, length, mismatch):
+def main(fw_file, rc_file, work_dir, barcodes, mismatch):
     try:
         logging.info('STEP 1: PREPROCESSING OF FASTA FILES STARTED')
         with fastqReader(fw_file) as fw_in, fastqReader(rc_file) as rc_in:
