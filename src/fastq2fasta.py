@@ -93,12 +93,11 @@ def foo(work_dir, ident, fastq_dir, is_gzip, maxsize):
                       'and {}: {}'.format(fw_file, fw_count, rc_file, rc_count))
 
 
-def main(work_dir, idents, maxsize):
+def main(work_dir, idents, is_gzip, maxsize):
     # 读取分箱后的fastq文件，每个样本对应一份FW和RC文件
     fastq_dir = path.join(work_dir, 'PreprocessedFiles')
     logging.info('Converting fastq to fasta format')
     logging.info('Maximum number of reads allowed:{}'.format(maxsize))
-    is_gzip = Config()['gzip']
     if path.exists(fastq_dir):
         result = list()
         threads = Config()['thread']
