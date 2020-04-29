@@ -4,23 +4,23 @@
 
 1. ### 软件依赖
 
-   cd-hit-est
+   cd-hit-est   4.6.4
 
    https://github.com/weizhongli/cdhit
 
-   fr-hit
+   fr-hit   0.7
 
    http://weizhong-lab.ucsd.edu/frhit/download.php
 
-   velvet
+   velvet   1.2.10
 
    https://github.com/dzerbino/velvet
 
-   phrap/cross_match
+   phrap/cross_match    1.090518
 
    http://www.phrap.org/consed/consed.html#howToGet
    
-   seqtk
+   seqtk    1.3 (r106)
    
    https://github.com/lh3/seqtk
 
