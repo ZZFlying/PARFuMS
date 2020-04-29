@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 import logging
 import sys
-from os import path, mkdir
+from shutil import rmtree
+from tempfile import mkdtemp
+from os import path, mkdir, remove
 
-from sub.parfums_subs import submit_array, create_tempdir
+from sub.parfums_subs import submit_array
+from util.singleton_config import Config
 
 step = 0
 
@@ -121,44 +124,53 @@ def make_script(run_type, temp_dir, suffix=None, idents=None, params=None,
             out.writelines(script)
     return job_file, out_file
 
+
+def clean_files(files):
+    for ident, file in files.items():
+        remove(file)
+
+
 def round_1(work_dir, seq_file, phrap_file):
     logging.info('Phrap Assembly Round-1 Started')
-    directory = create_tempdir(work_dir, prefix='PhrapRun1_')
-    temp_dir = directory.name
+    tempdir = mkdtemp(dir=path.join(work_dir, 'temp'), prefix='PhrapRun1_')
 
     phrap_param = '-minmatch 25 -maxmatch 40 -bandwidth 1 -minscore 30'
-    script, contig_file = make_script('phrap', temp_dir, seq=phrap_file, suffix='phrapContigs.fasta', params=phrap_param)
-    submit_array(script, 'PhrapRun1', temp_dir)
+    script, contig_file = make_script('phrap', tempdir, seq=phrap_file, suffix='phrapContigs.fasta', params=phrap_param)
+    submit_array(script, 'PhrapRun1', tempdir)
 
-    script, cdhit_file = make_script('cd-hit-est', temp_dir, contig=contig_file, suffix='phrap.cdhit1')
-    submit_array(script, 'CD-hit1', temp_dir)
+    script, cdhit_file = make_script('cd-hit-est', tempdir, contig=contig_file, suffix='phrap.cd-hit1.fasta')
+    submit_array(script, 'CD-hit1', tempdir)
     logging.info('CD-hit-est Run complete')
 
-    script, frhit_file = make_script('fr-hit', temp_dir, seq=seq_file, cdhit=cdhit_file, suffix='phrap_Map1.frhit')
-    submit_array(script, 'FR-hit1', temp_dir)
+    script, frhit_file = make_script('fr-hit', tempdir, seq=seq_file, cdhit=cdhit_file, suffix='phrap.Map1.txt')
+    submit_array(script, 'FR-hit1', tempdir)
     logging.info('FR-hit Run complete')
 
-    script, phrap_file = make_script('link-contigs', temp_dir, frhit=frhit_file, cdhit=cdhit_file, suffix='ForPhrap2.fasta')
-    submit_array(script, 'Link-contigs', temp_dir)
+    script, phrap_file = make_script('link-contigs', tempdir, frhit=frhit_file, cdhit=cdhit_file, suffix='ForPhrap2.fasta')
+    submit_array(script, 'Link-contigs', tempdir)
     logging.info('Link-contigs Run complete')
 
+    clean_files(frhit_file)
+    if Config()['auto_del']:
+        rmtree(tempdir)
     logging.info('Round-1 completed')
     return phrap_file
 
 
 def round_2(work_dir, phrap_file):
     logging.info('Phrap Assembly Round-2 Started')
-    directory = create_tempdir(work_dir, prefix='PhrapRun2_')
-    temp_dir = directory.name
+    tempdir = mkdtemp(dir=path.join(work_dir, 'temp'), prefix='PhrapRun2_')
 
     phrap_param = '-minmatch 25 -maxmatch 40 -bandwidth 1 -minscore 30'
-    script, contig_file = make_script('phrap', temp_dir, seq=phrap_file, suffix='phrapContigs2.fasta', params=phrap_param)
-    submit_array(script, 'PhrapRun2', temp_dir)
+    script, contig_file = make_script('phrap', tempdir, seq=phrap_file, suffix='phrapContigs2.fasta', params=phrap_param)
+    submit_array(script, 'PhrapRun2', tempdir)
 
-    script, cdhit_file = make_script('cd-hit-est', temp_dir, contig=contig_file, suffix='phrap.fasta')
-    submit_array(script, 'CD-hit2', temp_dir)
+    script, cdhit_file = make_script('cd-hit-est', tempdir, contig=contig_file, suffix='phrap.fasta')
+    submit_array(script, 'CD-hit2', tempdir)
     logging.info('CD-hit-est Run complete')
 
+    if Config()['auto_del']:
+        rmtree(tempdir)
     logging.info('Round-2 completed')
 
 
@@ -168,5 +180,3 @@ def main(work_dir, idents):
     phrap_file = read_inputSequences(work_dir, idents, 'ForPhrap1.fasta')
     phrap_file = round_1(work_dir, seq_file, phrap_file)
     round_2(work_dir, phrap_file)
-
-
