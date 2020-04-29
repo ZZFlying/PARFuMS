@@ -9,20 +9,20 @@ from os import path, remove, mkdir
 from glob import glob
 from math import ceil
 from shutil import copy
-from time import sleep
 from tempfile import TemporaryDirectory
+from time import sleep
 
-from src.temp_folder import AutoTempdir
-from src.singleton_config import Config
+import gzip
+
+from util.singleton_config import Config
 from subprocess import check_output, CalledProcessError, Popen
 
 
 def create_tempdir(work_dir, prefix):
     tempdir = path.join(work_dir, 'temp')
-    # if not path.exists(tempdir):
-    #     mkdir(tempdir)
-    # directory = TemporaryDirectory(prefix=prefix, dir=tempdir)
-    directory = AutoTempdir(dir=tempdir, prefix=prefix, autodel=Config()['autodel'])
+    if not path.exists(tempdir):
+        mkdir(tempdir)
+    directory = TemporaryDirectory(prefix=prefix, dir=tempdir)
     logging.info('Created temp folder: {}'.format(tempdir))
     return directory
 
@@ -38,9 +38,9 @@ def read_fasta(work_dir, tempdir, idents, maxsize, suffix):
         fasta_filename = '{}.{}'.format(ident, suffix)
         fasta_file = path.join(work_dir, ident, fasta_filename)
         if path.exists(fasta_file):
-            cmd = "grep '^>' {} | wc -l".format(fasta_file)
-            count = check_output(cmd, shell=True)
-            count = int(count)
+            cmd_template = 'zcat {} | grep "^>" | wc -l' if suffix.split('.')[-1] == 'gz' else "grep '^>' {} | wc -l"
+            cmd = cmd_template.format(fasta_file)
+            count = int(check_output(cmd, shell=True))
             if count > maxsize:
                 process_file[ident] = fasta_file
             else:
@@ -56,12 +56,13 @@ def split_fasta_files(process_file, out_dir, maxsize):
     results = dict()
     for (ident, file) in process_file.items():
         split_list = list()
-        with open(file) as f:
+        _open = gzip.open if file.split('.')[-1] == 'gz' else open
+        with _open(file, 'rt') as f:
             count = 0
             file_part = 1
             split_name = '{}-part{}.fasta'
             split_file = path.join(out_dir, split_name.format(ident, file_part))
-            output = open(split_file, 'w')
+            output = open(split_file, 'wt')
             line = f.readline()
             while line:
                 if line.startswith('>'):
