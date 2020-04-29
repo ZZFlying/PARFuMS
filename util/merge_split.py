@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from sys import path
+from os import path
 
 
 def merge_file(work_dir, split_files, suffix):
