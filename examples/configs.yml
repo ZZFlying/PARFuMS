@@ -11,7 +11,7 @@ maxsize: 4000000
 # 运行时的最大进程数
 thread: 8
 # 自动删除运行过程中产生的临时文件
-auto_del: False
+auto_del: True
 # info = 0; debug = 1
 logger_level: 1
 gzip: True
