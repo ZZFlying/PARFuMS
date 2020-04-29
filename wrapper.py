@@ -141,8 +141,9 @@ if __name__ == '__main__':
                 logging.info('STEP 2: PRIMER SEQUENCES REMOVED')
             elif step == 3:
                 # 去除载体
-                idents = check_output_files(work_dir, idents, step, 'clean.fasta')
-                remove_vector(work_dir, vector_file, idents)
+                suffix = 'clean.fasta.gz' if is_gzip else 'fasta'
+                idents = check_output_files(work_dir, idents, step, suffix)
+                remove_vector(work_dir, vector_file, idents, is_gzip)
                 logging.info('STEP 3: VECTOR SEQUENCES REMOVED')
             elif step == 4:
                 # velvet组装
