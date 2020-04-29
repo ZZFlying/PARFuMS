@@ -23,7 +23,6 @@ def main(work_dir, vector_file, idents, is_gzip, maxsize=200000):
     script, result = cross_match_script(split_file, vector_file, tempdir, script, suffix='noVector')
     submit_array(script, 'vector_run', tempdir)
     # 合并清除序列后的分割文件
-    files_list = merge_file(work_dir, result, suffix='noVector.fasta')
-    compress_multi(files_list.values())
+    merge_file(work_dir, result, suffix='noVector.fasta')
     if Config()['auto_del']:
         rmtree(tempdir)
