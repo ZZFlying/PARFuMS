@@ -1,16 +1,17 @@
-FW_file: /root/PARFuMS/datasets/FW.fastq
-RC_file: /root/PARFuMS/datasets/RC.fastq
+FW_file: /root/PARFuMS/datasets/FW.fastq.gz
+RC_file: /root/PARFuMS/datasets/RC.fastq.gz
 BC_file: /root/PARFuMS/examples/barcode_mappingfile.txt
 work_dir: /root/PARFuMS/output
 primer_file: /root/PARFuMS/datasets/primer.fasta
 vector_file: /root/PARFuMS/datasets/vector.fasta
 # 是否输出无barcode匹配的reads
-mismatch: true
+mismatch: True
 # 一个样本的最大reads数
-maxsize: 8000000
+maxsize: 4000000
 # 运行时的最大进程数
-thread: 4
+thread: 8
 # 自动删除运行过程中产生的临时文件
-autodel: false
+auto_del: False
 # info = 0; debug = 1
-logger_level: 0
+logger_level: 1
+gzip: True
