@@ -4,7 +4,7 @@ import logging
 from os import system
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from src.singleton_config import Config
+from util.singleton_config import Config
 
 
 def compress(filename):

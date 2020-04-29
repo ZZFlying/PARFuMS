@@ -2,8 +2,8 @@
 import logging
 from os import path, mkdir
 
-from src.compress import compress_multi
-from src.fastqReader import fastqReader
+from util.compress import compress_multi
+from util.fastqReader import fastqReader
 
 
 def create_handle(file_handles, read_count, tempdir, barcode='Mismatch', ident='Mismatch'):

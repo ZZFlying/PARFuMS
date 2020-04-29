@@ -5,7 +5,7 @@ from os import path, mkdir, remove, system
 from random import randint
 from subprocess import check_output
 
-from src.singleton_config import Config
+from util.singleton_config import Config
 
 
 def fastq2fasta(fastq_file, fasta_file):
