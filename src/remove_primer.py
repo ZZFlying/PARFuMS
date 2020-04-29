@@ -5,7 +5,7 @@ import logging
 from os import path
 from collections import defaultdict
 from shutil import rmtree
-from tempfile import TemporaryDirectory, mkdtemp
+from tempfile import mkdtemp
 
 from util.compress import compress_multi
 from util.merge_split import merge_file
