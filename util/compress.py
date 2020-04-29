@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from util.singleton_config import Config
 
 
-def compress(filename):
+def _compress(filename):
     cmd = 'gzip -f {}'.format(filename)
     system(cmd)
     return filename
@@ -21,7 +21,7 @@ def compress_multi(files_list):
         result = list()
         for file in files_list:
             logging.info('Gzip  {}'.format(file))
-            result.append(pool.submit(compress, file))
+            result.append(pool.submit(_compress, file))
         for future in as_completed(result):
             gz_file = future.result()
             gz_file = gz_file + '.gz'
