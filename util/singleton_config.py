@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+from yaml import safe_load
+
+
 def Singleton(cls):
     _instance = {}
 
@@ -10,24 +15,10 @@ def Singleton(cls):
 
 
 def read_config(config_file):
-    contig = dict()
-    # 读取配置文件，忽略#开头的行
     with open(config_file) as config_in:
-        for line in config_in:
-            line = line.strip()
-            if line.startswith('#') or not line:
-                continue
-            array = line.split(':')
-            key = array[0].strip()
-            value = array[1].strip()
-            if value.isdigit():
-                value = int(value)
-            elif value.upper() == 'TRUE':
-                value = True
-            elif value.upper() == 'FALSE':
-                value = False
-            contig[key] = value
-    return contig
+        config = safe_load(config_in)
+        return config
+
 
 # 装饰器实现单例模式
 @Singleton
