@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os
+
 import sys
 import logging
 from multiprocessing import Pool, Manager
@@ -90,7 +90,7 @@ def split_fasta_files(process_file, out_dir, maxsize):
 
 def executor_foo(task_queue, done_queue, Id, work_dir):
     try:
-        out_file = '{}.out'.format(Id)
+        out_file = 'mission-{}.out'.format(Id)
         out_file = path.join(work_dir, out_file)
         out_file = open(out_file, 'w')
         mission = task_queue.get()
