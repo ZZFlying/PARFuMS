@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import logging
-from os import path, mkdir
+from os import path, mkdir, remove
 from shutil import rmtree
 from tempfile import mkdtemp
 
@@ -9,6 +9,7 @@ from sub.parfums_subs import submit_array, read_fasta
 from util.singleton_config import Config
 
 step = 0
+
 
 def read_inputSequences(work_dir, idents, suffix):
     # 返回suffix后缀文件的绝对路径
@@ -169,6 +170,11 @@ def make_script(run_type, temp_dir, suffix=None, idents=None, params=None,
     return job_file, out_file
 
 
+def clean_files(files):
+    for ident, file in files.items():
+        remove(file)
+
+
 def round_1(work_dir, seq_file, idents):
     logging.info('Velvet Assembly Round-1 Started')
     tempdir = mkdtemp(dir=path.join(work_dir, 'temp'), prefix='VelvetRun1_')
@@ -193,6 +199,8 @@ def round_1(work_dir, seq_file, idents):
                                           idents=idents, suffix='noChimera.fasta')
     submit_array(script, 'Remove-Chimera1', tempdir)
 
+    clean_files(frhit_file)
+
     script, cdhit_file = make_script('cd-hit-est', tempdir, contig=no_chimera_file, suffix='cd-hit2.fasta')
     submit_array(script, 'CD-hit2', tempdir)
     # 将原始的seq片段映射到Velvet组装后去重的contig片段
@@ -204,6 +212,7 @@ def round_1(work_dir, seq_file, idents):
                                      seq=seq_file, frhit=frhit_file, split=split_file, suffix='Missing1stPass.fasta')
     submit_array(script, 'UnmappedReads1', tempdir)
 
+    clean_files(frhit_file)
     if Config()['auto_del']:
         rmtree(tempdir)
     logging.info('Round-1 completed')
@@ -235,6 +244,7 @@ def round_2(work_dir, seq_file, split_file, cdhit_file, idents):
                                      seq=seq_file, frhit=frhit_file, split=split_file, suffix='Missing2ndPass.fasta')
     submit_array(script, 'UnmappedReads2', tempdir)
 
+    clean_files(frhit_file)
     if Config()['auto_del']:
         rmtree(tempdir)
     logging.info('Round-2 completed')
@@ -265,6 +275,7 @@ def round_3(work_dir, seq_file, split_file, cdhit_file, idents):
                                      cdhit=cdhit_file, frhit=frhit_file, idents=idents, suffix='ForPhrap1.fasta')
     submit_array(script, 'Remove-Chimera2', tempdir)
 
+    clean_files(frhit_file)
     if Config()['auto_del']:
         rmtree(tempdir)
     logging.info('Round-3 completed')
