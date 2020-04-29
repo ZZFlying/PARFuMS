@@ -19,12 +19,16 @@
    phrap/cross_match
 
    http://www.phrap.org/consed/consed.html#howToGet
+   
+   seqtk
+   
+   https://github.com/lh3/seqtk
 
 2. ### 数据格式要求
 
-   原始双端文件：测序样本的序列已清除barcode，序列文件不分割，barcode标注在序列注释最后面
+   原始双端文件：测序样本的序列已清除barcode，序列文件不分割，barcode标注在序列注释最后，用:分割
 
-   @SeqID [describiton]barcode
+   @SeqID [describiton]:barcode
 
    
 
