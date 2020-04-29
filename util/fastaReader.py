@@ -8,11 +8,14 @@ class record:
         self._seq = seq
 
     def __str__(self):
-        return self.parse()
+        return self.id + self._seq
 
-    def parse(self, length=50):
-        _seq = [self._seq[i:i + length] for i in range(0, len(self._seq), length)]
-        self._seq = str.join('\n', _seq) + '\n'
+    def parse(self, length=0):
+        if length:
+            _seq = [self._seq[i:i + length] for i in range(0, len(self._seq), length)]
+            self._seq = str.join('\n', _seq) + '\n'
+        else:
+            self._seq = self._seq + '\n'
         return self.id + self._seq
 
 
@@ -21,6 +24,7 @@ class fastaReader:
     def __init__(self, handle):
         _open = gzip.open if handle.split('.')[-1] == 'gz' else open
         self._handle = _open(handle, 'rt')
+        self._last_id = ''
 
     def __iter__(self):
         return self
@@ -39,23 +43,21 @@ class fastaReader:
             raise StopIteration
 
     def _read_one_record(self):
-        _id = self._handle.readline()
+        _id = self._last_id if self._last_id else self._handle.readline()
         while not _id.startswith('>'):
             if not _id:
                 raise StopIteration
             _id = self._handle.readline()
 
         _seq = ''
-        pos = self._handle.tell()
         _sub_seq = self._handle.readline()
         while not _sub_seq.startswith('>'):
             _seq += _sub_seq.strip()
-            pos = self._handle.tell()
             _sub_seq = self._handle.readline()
             if not _sub_seq:
-                self._handle.seek(pos)
+                self._last_id = ''
                 return record(_id, _seq)
-        self._handle.seek(pos)
+        self._last_id = _sub_seq
         return record(_id, _seq)
 
     def close(self):
