@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-import sys
+
 import logging
 import traceback
+import argparse
 from os import path, mkdir
 
-import argparse
-
-from src.singleton_config import Config
-from src.load_barcode import load_barcode
+from util.singleton_config import Config
+from util.load_barcode import load_barcode
 
 from src.preprocessing import main as preprocessing
 from src.fastq2fasta import main as fastq2fasta
@@ -138,7 +137,7 @@ if __name__ == '__main__':
                 # 去除引物
                 suffix = 'fasta.gz' if is_gzip else 'fasta'
                 idents = check_output_files(work_dir, idents, step, suffix)
-                remove_primer(work_dir, primer_file, idents)
+                remove_primer(work_dir, primer_file, idents, is_gzip)
                 logging.info('STEP 2: PRIMER SEQUENCES REMOVED')
             elif step == 3:
                 # 去除载体
