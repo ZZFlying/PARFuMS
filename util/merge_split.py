@@ -3,16 +3,16 @@ import logging
 from os import path
 
 
-def merge_file(work_dir, split_files, suffix):
+def merge_file(work_dir, cm_files, suffix):
     logging.info('Merging clean fasta output files')
-    merged_file = dict()
-    for (ident, files) in split_files.items():
+    result = dict()
+    for (ident, files) in cm_files.items():
         out_file = path.join(work_dir, ident, '{}.{}'.format(ident, suffix))
-        merged_file[ident] = out_file
+        result[ident] = out_file
         with open(out_file, 'w') as out:
             for file in files:
-                with open(file) as split_file:
-                    for line in split_file:
+                with open(file) as split_cm:
+                    for line in split_cm:
                         out.write(line)
-        logging.info('{} is merged'.format(out_file))
-    return merged_file
+        logging.info('{} is formed'.format(out_file))
+    return result
