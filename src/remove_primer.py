@@ -4,8 +4,13 @@ import sys
 import logging
 from os import path
 from collections import defaultdict
+from shutil import rmtree
+from tempfile import TemporaryDirectory, mkdtemp
 
-from sub.parfums_subs import submit_array, create_tempdir, read_fasta
+from util.compress import compress_multi
+from util.merge_split import merge_file
+from sub.parfums_subs import submit_array, read_fasta
+from util.singleton_config import Config
 
 
 def make_script(split_file, map_file, tempdir, script, suffix):
@@ -29,33 +34,17 @@ def make_script(split_file, map_file, tempdir, script, suffix):
     return cm_script, cm_files
 
 
-def merge_cm_file(work_dir, cm_files, suffix):
-    logging.info('Merging clean fasta output files')
-    merge_file = dict()
-    for (ident, files) in cm_files.items():
-        out_file = path.join(work_dir, ident, '{}.{}'.format(ident, suffix))
-        merge_file[ident] = out_file
-        with open(out_file, 'w') as out:
-            for file in files:
-                with open(file) as split_cm:
-                    for line in split_cm:
-                        out.write(line)
-        logging.info('{} is formed'.format(out_file))
-    return merge_file
-
-
-def clean_primer_seq(work_dir, primer_file, idents, maxsize):
+def main(work_dir, primer_file, idents, is_gzip, maxsize=200000):
     logging.info('STEP 2: REMOVING PRIMER SEQUENCES')
-    directory = create_tempdir(work_dir, prefix='primer_CMRun_')
-    tempdir = directory.name
-    script = 'CleanAdapter-Illumina_PE_mod.py'
+    tempdir = mkdtemp(dir=path.join(work_dir, 'temp'), prefix='primer_')
+    script = 'CleanPrimer.py'
     # 将大文件分割为maxsize条序列的小文件，多进程同时进行任务
-    split_file = read_fasta(work_dir, tempdir, idents, maxsize, suffix='fasta')
-    cm_script, cm_files = make_script(split_file, primer_file, tempdir, script, suffix='clean')
-    submit_array(cm_script, 'primer_CM_run', tempdir)
+    suffix = 'fasta.gz' if is_gzip else 'fasta'
+    split_file = read_fasta(work_dir, tempdir, idents, maxsize, suffix)
+    script, result = make_script(split_file, primer_file, tempdir, script, suffix='clean')
+    submit_array(script, 'primer_run', tempdir)
     # 合并清除序列后的分割文件
-    merge_cm_file(work_dir, cm_files, suffix='clean.fasta')
-
-
-def main(work_dir, primer_file, idents, maxsize=200000):
-    clean_primer_seq(work_dir, primer_file, idents, maxsize)
+    files_list = merge_file(work_dir, result, suffix='clean.fasta')
+    compress_multi(files_list.values())
+    if Config()['auto_del']:
+        rmtree(tempdir)
