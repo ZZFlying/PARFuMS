@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import logging
-from os import path, mkdir, system
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from os import path, mkdir
 
+from src.compress import compress_multi
 from src.fastqReader import fastqReader
-from src.singleton_config import Config
 
 
 def create_handle(file_handles, read_count, tempdir, barcode='Mismatch', ident='Mismatch'):
@@ -60,26 +59,7 @@ def write_record(handles, barcode, fw_read, rc_read):
     rc_handle.write(rc_read.parse(1))
 
 
-def compress(filename):
-    cmd = 'gzip -f {}'.format(filename)
-    system(cmd)
-    return filename
-
-
-def compress_multi(files_list):
-    threads = Config()['thread']
-    pool = ThreadPoolExecutor(threads)
-    result = list()
-    for file in files_list:
-        logging.info('Gzip  {}'.format(file))
-        result.append(pool.submit(compress, file))
-    for future in as_completed(result):
-        gz_file = future.result()
-        gz_file = gz_file + '.gz'
-        logging.info(gz_file + ' had created.')
-
-
-def main(fw_file, rc_file, work_dir, barcodes, is_gzip, mismatch):
+def main(fw_file, rc_file, work_dir, barcodes, mismatch):
     try:
         logging.info('STEP 1: PREPROCESSING OF FASTA FILES STARTED')
         with fastqReader(fw_file) as fw_in, fastqReader(rc_file) as rc_in:
@@ -101,7 +81,6 @@ def main(fw_file, rc_file, work_dir, barcodes, is_gzip, mismatch):
             # 安全关闭文件io，保障所有序列的正常写入文件
             close_file(file_handles)
             write_summary(work_dir, read_count, total)
-            if is_gzip:
-                compress_multi(files_list)
+            compress_multi(files_list)
     except FileNotFoundError:
         logging.error('Failed to open file')
