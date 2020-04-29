@@ -90,10 +90,10 @@ def parse_step(_step):
     _step_list = list()
     if ':' in _step:
         _step = _step.split(':')
-        start = int(step[0])
-        stop = int(step[1])
+        start = int(_step[0])
+        stop = int(_step[1])
         _step_list = range(start, stop + 1)
-    elif int(step) == 0:
+    elif int(_step) == 0:
         _step_list = range(1, 6)
     else:
         _step_list.append(int(_step))
@@ -141,7 +141,7 @@ if __name__ == '__main__':
                 logging.info('STEP 2: PRIMER SEQUENCES REMOVED')
             elif step == 3:
                 # 去除载体
-                suffix = 'clean.fasta.gz' if is_gzip else 'fasta'
+                suffix = 'clean.fasta.gz' if is_gzip else 'clean.fasta'
                 idents = check_output_files(work_dir, idents, step, suffix)
                 remove_vector(work_dir, vector_file, idents, is_gzip)
                 logging.info('STEP 3: VECTOR SEQUENCES REMOVED')
