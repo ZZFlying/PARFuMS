@@ -199,7 +199,7 @@ def main(fr_file, cd_file, tempdir, ident, out_file):
     threshold = update_link_threshold(links)
 
     dirname = path.dirname(out_file)
-    fasta_file = path.join(dirname, ident + '.clean.fasta')
+    fasta_file = path.join(dirname, ident + '.noVector.fasta')
 
     directory = create_tempdir(tempdir)
     tempdir = directory.name
