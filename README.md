@@ -86,10 +86,10 @@
    
    0是运行全部步骤，2是只运行step2，2:4是从step2运行到step4.
    
-   python3 wrapper.py config_1.txt 0
+   python3 wrapper.py config_1.yml 0
    
-   python3 wrapper.py config_2.txt 2
+   python3 wrapper.py config_2.yml 2
    
-   python3 wrapper.py config_3.txt 2:4
+   python3 wrapper.py config_3.yml 2:4
    ```
    
