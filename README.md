@@ -23,6 +23,8 @@
    seqtk    1.3 (r106)
    
    https://github.com/lh3/seqtk
+   
+   Python模块：PyYaml
 
 2. ### 数据格式要求
 
@@ -34,7 +36,8 @@
 
 3. ### 配置文件说明
 
-   config配置文件示例：config.txt
+   config配置文件示例：config.yml
+   格式为YAML格式，‘：’号后留一个空格
 
    ```
    # 双端文件，fastq格式，支持gz压缩
