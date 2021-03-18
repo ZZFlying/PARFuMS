@@ -34,8 +34,9 @@ def merge_velvet(work_dir, temp_dir, split_file, suffix):
             for file in files:
                 split_name = path.basename(file).split('.')[0]
                 contig_file = path.join(temp_dir, 'assemble_{}'.format(split_name), 'contigs.fa')
-                with open(contig_file) as contig_in:
-                    out.writelines(contig_in.readlines())
+                if (path.exists(contig_file)):
+                    with open(contig_file) as contig_in:
+                        out.writelines(contig_in.readlines())
             contigs[ident] = out_file
             logging.info('{} contigs merge completely'.format(out_file))
     return contigs

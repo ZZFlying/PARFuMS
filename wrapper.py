@@ -57,18 +57,19 @@ def check_output_files(_word_dir, _idents, _step, _suffix):
     # 检测主要步骤的结果文件
     # 如果文件不存在或文件大小为0,认为该步骤出现错误,移除对应的样本标识
     not_pass_list = list()
+    pass_list = list()
     for ident in _idents:
         out_file = path.join(_word_dir, ident, '{}.{}'.format(ident, _suffix))
         if path.exists(out_file) and path.getsize(out_file):
+            pass_list.append(ident)
             continue
         logging.info('{} is empty or not found. Halting its processing here'.format(out_file))
         not_pass_list.append(ident)
-        _idents.remove(ident)
     if not_pass_list:
         not_pass_seq = ' '.join([i for i in not_pass_list])
         logging.info('IDs not included at Step{}: {}'.format(_step, not_pass_seq))
-    logging.debug('Check passed list:' + _idents.__str__())
-    return _idents
+    logging.debug('Check passed list:' + pass_list.__str__())
+    return pass_list
 
 
 def make_output_dir(_work_dir):

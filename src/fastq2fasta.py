@@ -91,6 +91,7 @@ def foo(work_dir, ident, fastq_dir, is_gzip, maxsize):
     else:
         logging.error('FW and RC file has unequal entries: {}: {} '
                       'and {}: {}'.format(fw_file, fw_count, rc_file, rc_count))
+        return ''
 
 
 def main(work_dir, idents, is_gzip, maxsize):
@@ -106,8 +107,10 @@ def main(work_dir, idents, is_gzip, maxsize):
             result.append(pool.submit(foo, work_dir, ident, fastq_dir, is_gzip, maxsize))
         for future in as_completed(result):
             fasta_file = future.result()
-            fasta_file = fasta_file + '.gz'
-            logging.info(fasta_file + ' had created.')
+            if len(fasta_file) == 0:
+                logging.error("存在样本为空")
+            else:
+                logging.info(fasta_file + ' had created.')
     else:
         logging.error('Error: Directory doesnt exists')
     logging.info("Format Conversion done successfully")
